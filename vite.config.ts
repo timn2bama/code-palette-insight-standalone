@@ -7,10 +7,9 @@ import { visualizer } from 'rollup-plugin-visualizer';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    // Keep 0.0.0.0 if you need to test on other devices on your network,
-    // otherwise prefer 'localhost' for better security.
-    host: mode === 'production' ? 'localhost' : '0.0.0.0',
-    port: 8080,
+    // Use environment variables for host and port, falling back to secure defaults
+    host: process.env.VITE_HOST || '0.0.0.0',
+    port: process.env.VITE_PORT ? parseInt(process.env.VITE_PORT, 10) : 8080,
     strictPort: false,
   },
   plugins: [
@@ -49,5 +48,9 @@ export default defineConfig(({ mode }) => ({
     sourcemap: true,
     // Optimize bundle size only in production
     minify: mode === 'production' ? 'terser' : false
+  },
+  esbuild: {
+    // Automatically drop all console.log and debugger statements in production
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
   }
 }));
