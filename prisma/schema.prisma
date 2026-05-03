@@ -1,0 +1,274 @@
+// Prisma schema for SyncStyle (Vercel Postgres)
+// Based on Supabase data model
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Profile {
+  id           String   @id @default(uuid())
+  user_id      String   @unique
+  display_name String?
+  avatar_url   String?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model WardrobeItem {
+  id               String   @id @default(uuid())
+  user_id          String
+  name             String
+  category         String
+  brand            String?
+  color            String?
+  photo_url        String?
+  wear_count       Int      @default(0)
+  last_worn        DateTime?
+  purchase_date    DateTime?
+  dominant_color   String?
+  color_palette    Json?
+  detected_labels  Json?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  outfit_items     OutfitItem[]
+  marketplace_item MarketplaceItem?
+  rental_item      RentalItem?
+  analytics        WardrobeAnalytics[]
+  carbon_footprint CarbonFootprintItem?
+
+  @@map("wardrobe_items")
+}
+
+model Outfit {
+  id           String   @id @default(uuid())
+  user_id      String
+  name         String
+  description  String?
+  occasion     String?
+  season       String?
+  is_public    Boolean  @default(false)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  items        OutfitItem[]
+  wear_logs    OutfitWearLog[]
+
+  @@map("outfits")
+}
+
+model OutfitItem {
+  id               String   @id @default(uuid())
+  outfit_id        String
+  wardrobe_item_id String
+  created_at       DateTime @default(now())
+
+  outfit           Outfit       @relation(fields: [outfit_id], references: [id], onDelete: Cascade)
+  wardrobe_item    WardrobeItem @relation(fields: [wardrobe_item_id], references: [id], onDelete: Cascade)
+
+  @@map("outfit_items")
+}
+
+model MarketplaceItem {
+  id                   String   @id @default(uuid())
+  seller_id            String
+  wardrobe_item_id     String?  @unique
+  title                String
+  description          String?
+  price                Float
+  condition            String
+  category             String
+  size                 String?
+  brand                String?
+  photos               Json?
+  is_available         Boolean  @default(true)
+  shipping_included    Boolean  @default(false)
+  sustainability_score Int?
+  buyer_id             String?
+  sold_at              DateTime?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  wardrobe_item        WardrobeItem? @relation(fields: [wardrobe_item_id], references: [id])
+
+  @@map("marketplace_items")
+}
+
+model RentalItem {
+  id                String   @id @default(uuid())
+  owner_id          String
+  wardrobe_item_id  String?  @unique
+  title             String
+  description       String?
+  daily_rate        Float
+  weekly_rate       Float?
+  deposit_amount    Float
+  category          String
+  size              String?
+  brand             String?
+  photos            Json?
+  is_available      Boolean  @default(true)
+  rental_terms      String?
+  care_instructions String?
+  created_at        DateTime @default(now())
+  updated_at        DateTime @updatedAt
+
+  wardrobe_item     WardrobeItem? @relation(fields: [wardrobe_item_id], references: [id])
+  bookings          RentalBooking[]
+
+  @@map("rental_items")
+}
+
+model RentalBooking {
+  id                   String   @id @default(uuid())
+  rental_item_id       String
+  renter_id            String
+  start_date           DateTime
+  end_date             DateTime
+  status               String   @default("pending")
+  total_cost           Float
+  deposit_paid         Float
+  return_condition     String?
+  review_rating        Int?
+  review_comment       String?
+  special_instructions String?
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  rental_item          RentalItem @relation(fields: [rental_item_id], references: [id])
+
+  @@map("rental_bookings")
+}
+
+model SavedService {
+  id              String   @id @default(uuid())
+  user_id         String
+  service_name    String
+  service_address String
+  service_phone   String?
+  service_data    Json
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("saved_services")
+}
+
+model DailyOutfitSuggestion {
+  id               String   @id @default(uuid())
+  user_id          String
+  suggestion_date  DateTime
+  outfit_data      Json
+  ai_reasoning     String?
+  occasion         String?
+  style_preference String?
+  weather_context  Json?
+  user_feedback    String?
+  was_worn         Boolean  @default(false)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("daily_outfit_suggestions")
+}
+
+model OutfitWearLog {
+  id                 String   @id @default(uuid())
+  user_id            String
+  outfit_id          String?
+  worn_date          DateTime @default(now())
+  worn_at            DateTime @default(now())
+  occasion           String?
+  location           String?
+  weather_temp       Float?
+  weather_condition  String?
+  comfort_rating     Int?
+  style_satisfaction Int?
+  mood_tags          String[]
+  notes              String?
+  items_worn         Json
+  would_wear_again   Boolean?
+  created_at         DateTime @default(now())
+  updated_at         DateTime @updatedAt
+
+  outfit             Outfit?  @relation(fields: [outfit_id], references: [id])
+
+  @@map("outfit_wear_logs")
+}
+
+model WardrobeAnalytics {
+  id               String   @id @default(uuid())
+  user_id          String
+  wardrobe_item_id String
+  wear_count       Int      @default(0)
+  total_cost       Float?
+  cost_per_wear    Float?
+  last_calculated  DateTime?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  wardrobe_item    WardrobeItem @relation(fields: [wardrobe_item_id], references: [id])
+
+  @@map("wardrobe_analytics")
+}
+
+model CarbonFootprintItem {
+  id                   String   @id @default(uuid())
+  user_id              String
+  wardrobe_item_id     String   @unique
+  manufacturing_impact Float?
+  transportation_impact Float?
+  usage_impact         Float?
+  disposal_impact      Float?
+  total_footprint      Float?
+  last_calculated      DateTime @default(now())
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
+
+  wardrobe_item        WardrobeItem @relation(fields: [wardrobe_item_id], references: [id])
+
+  @@map("carbon_footprint_items")
+}
+
+model IntegrationSetting {
+  id               String   @id @default(uuid())
+  user_id          String
+  integration_type String
+  settings         Json
+  is_active        Boolean  @default(true)
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("integration_settings")
+}
+
+model UsageTracking {
+  id                  String   @id @default(uuid())
+  user_id             String
+  usage_type          String
+  usage_count         Int      @default(0)
+  billing_period_start DateTime
+  billing_period_end   DateTime
+  created_at          DateTime @default(now())
+
+  @@map("usage_tracking")
+}
+
+model UserStylePreference {
+  id              String   @id @default(uuid())
+  user_id         String   @unique
+  preferences     Json
+  favorite_colors String[]
+  disliked_colors String[]
+  style_keywords  String[]
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  @@map("user_style_preferences")
+}

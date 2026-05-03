@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
 import { Capacitor } from '@capacitor/core';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 export const useCameraIntegration = () => {
   const [isCapturing, setIsCapturing] = useState(false);
@@ -52,7 +53,7 @@ export const useCameraIntegration = () => {
 
       return image.dataUrl || null;
     } catch (error) {
-      console.error('Camera error:', error);
+      logger.error('Camera error:', error);
       toast({
         title: 'Camera error',
         description: 'Failed to capture image',
@@ -82,7 +83,7 @@ export const useCameraIntegration = () => {
 
       return image.dataUrl || null;
     } catch (error) {
-      console.error('Gallery error:', error);
+      logger.error('Gallery error:', error);
       toast({
         title: 'Gallery error',
         description: 'Failed to select image',

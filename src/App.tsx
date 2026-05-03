@@ -20,7 +20,7 @@ const AppContent = () => {
   usePerformanceMonitoring();
   useRealUserMonitoring();
   useErrorLogger();
-  const { isOnline, pendingActions } = useOfflineFirst();
+  useOfflineFirst();
   
   return (
     <Suspense fallback={

@@ -11,6 +11,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { validateEmail, getSafeErrorMessage, rateLimiter } from '@/lib/security';
+import { logger } from "@/utils/logger";
 
 /**
  * Hook to fetch user subscription status
@@ -34,7 +35,7 @@ export const useSubscriptionQuery = (userId?: string) => {
       
       const { data, error } = await supabase.functions.invoke('check-subscription');
       if (error) {
-        console.warn('Subscription check failed:', error);
+        logger.warn('Subscription check failed:', error);
         return { subscribed: false }; // Graceful fallback
       }
       return data;

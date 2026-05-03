@@ -6,6 +6,7 @@ import { Download, Trash2, Shield } from 'lucide-react';
 import { useDataExport } from '@/hooks/queries/useDataExport';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from "@/utils/logger";
 
 export function PrivacyControls() {
   const { user, signOut } = useAuth();
@@ -16,7 +17,7 @@ export function PrivacyControls() {
     const success = await exportUserData();
     if (success) {
       // Log the export for audit purposes
-      console.log('User data exported:', { user_id: user?.id, timestamp: new Date().toISOString() });
+      logger.info('User data exported:', { user_id: user?.id, timestamp: new Date().toISOString() });
     }
   };
 

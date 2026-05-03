@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,6 +9,7 @@ import { Plus, Sparkles, Image } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 interface WardrobeItem {
   id: string;
@@ -54,16 +55,17 @@ export const OutfitSuggestions = ({ weatherSuggestions }: OutfitSuggestionsProps
   }, [weatherSuggestions, wardrobeItems]);
 
   const fetchWardrobeItems = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('wardrobe_items')
         .select('id, name, category, color, photo_url')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
       setWardrobeItems(data || []);
     } catch (error) {
-      console.error('Error fetching wardrobe items:', error);
+      logger.error('Error fetching wardrobe items:', error);
     }
   };
 
@@ -140,7 +142,7 @@ export const OutfitSuggestions = ({ weatherSuggestions }: OutfitSuggestionsProps
           .insert(outfitItems);
 
         if (itemsError) {
-          console.error('Error adding items to outfit:', itemsError);
+          logger.error('Error adding items to outfit:', itemsError);
         }
       }
 
@@ -150,7 +152,7 @@ export const OutfitSuggestions = ({ weatherSuggestions }: OutfitSuggestionsProps
       setOutfitDescription("");
       setSelectedSuggestion(null);
     } catch (error) {
-      console.error('Error creating outfit:', error);
+      logger.error('Error creating outfit:', error);
       toast.error('Failed to create outfit');
     } finally {
       setIsCreating(false);

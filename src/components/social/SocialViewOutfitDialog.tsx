@@ -10,7 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Heart, MessageCircle, Star, Calendar, MapPin, Shirt, Palette } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Heart, MessageCircle, Star, Calendar, MapPin, Shirt, Palette, Send } from "lucide-react";
 import { SocialOutfit } from "@/hooks/useSocialOutfits";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import { formatDistanceToNow } from 'date-fns';
@@ -22,6 +23,7 @@ interface SocialViewOutfitDialogProps {
   onLike?: (outfitId: string) => void;
   onUnlike?: (outfitId: string) => void;
   onRate?: (outfitId: string, rating: number) => void;
+  onComment?: (outfitId: string, content: string) => void;
   userLiked?: boolean;
   userRating?: number;
 }
@@ -33,11 +35,13 @@ const SocialViewOutfitDialog = ({
   onLike,
   onUnlike,
   onRate,
+  onComment,
   userLiked = false,
   userRating = 0
 }: SocialViewOutfitDialogProps) => {
   const [currentRating, setCurrentRating] = useState(userRating);
   const [isLiked, setIsLiked] = useState(userLiked);
+  const [comment, setComment] = useState("");
 
   const handleLike = () => {
     if (isLiked) {
@@ -52,6 +56,13 @@ const SocialViewOutfitDialog = ({
   const handleRating = (rating: number) => {
     setCurrentRating(rating);
     onRate?.(outfit.id, rating);
+  };
+
+  const handleSendComment = () => {
+    if (comment.trim()) {
+      onComment?.(outfit.id, comment.trim());
+      setComment("");
+    }
   };
 
   const formatDate = (dateString: string) => {
@@ -168,6 +179,27 @@ const SocialViewOutfitDialog = ({
                 {outfit.season.charAt(0).toUpperCase() + outfit.season.slice(1)}
               </Badge>
             )}
+          </div>
+
+          <Separator />
+
+          {/* Comments Section (Simplified) */}
+          <div className="space-y-4">
+            <h3 className="text-lg font-semibold text-primary flex items-center gap-2">
+              <MessageCircle className="h-5 w-5" />
+              Comments
+            </h3>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Add a comment..."
+                value={comment}
+                onChange={(e) => setComment(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSendComment()}
+              />
+              <Button size="sm" onClick={handleSendComment} disabled={!comment.trim()}>
+                <Send className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           <Separator />

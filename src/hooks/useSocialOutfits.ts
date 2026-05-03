@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from "@/utils/logger";
 
 export interface SocialOutfit {
   id: string;
@@ -66,7 +67,7 @@ export function useSocialOutfits() {
       if (error) throw error;
       return data as SocialOutfit[];
     } catch (error) {
-      console.error('Error fetching public outfits:', error);
+      logger.error('Error fetching public outfits:', error);
       toast.error('Failed to load public outfits');
       return [];
     } finally {
@@ -89,7 +90,7 @@ export function useSocialOutfits() {
       toast.success(isPublic ? 'Outfit shared publicly!' : 'Outfit made private');
       return true;
     } catch (error) {
-      console.error('Error updating outfit privacy:', error);
+      logger.error('Error updating outfit privacy:', error);
       toast.error('Failed to update outfit privacy');
       return false;
     }
@@ -106,7 +107,7 @@ export function useSocialOutfits() {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error liking outfit:', error);
+      logger.error('Error liking outfit:', error);
       toast.error('Failed to like outfit');
       return false;
     }
@@ -125,7 +126,7 @@ export function useSocialOutfits() {
       if (error) throw error;
       return true;
     } catch (error) {
-      console.error('Error unliking outfit:', error);
+      logger.error('Error unliking outfit:', error);
       toast.error('Failed to unlike outfit');
       return false;
     }
@@ -146,7 +147,7 @@ export function useSocialOutfits() {
       toast.success('Rating submitted!');
       return true;
     } catch (error) {
-      console.error('Error rating outfit:', error);
+      logger.error('Error rating outfit:', error);
       toast.error('Failed to submit rating');
       return false;
     }
@@ -168,7 +169,7 @@ export function useSocialOutfits() {
       toast.success('Comment added!');
       return true;
     } catch (error) {
-      console.error('Error adding comment:', error);
+      logger.error('Error adding comment:', error);
       toast.error('Failed to add comment');
       return false;
     }
@@ -191,7 +192,7 @@ export function useSocialOutfits() {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error fetching comments:', error);
+      logger.error('Error fetching comments:', error);
       return [];
     }
   }, []);

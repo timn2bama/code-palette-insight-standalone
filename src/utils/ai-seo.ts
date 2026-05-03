@@ -133,7 +133,7 @@ export const generateProductJsonLd = () => ({
 });
 
 // AI Search optimization helpers
-export const generateAISearchTags = (pageType: string, topic?: string) => {
+export const generateAISearchTags = (pageType: string) => {
   const baseTags = [
     'ai-fashion-assistant',
     'smart-wardrobe-management',

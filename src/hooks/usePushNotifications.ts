@@ -3,6 +3,7 @@ import { PushNotifications, Token, ActionPerformed } from '@capacitor/push-notif
 import { Capacitor } from '@capacitor/core';
 import { LocalNotifications } from '@capacitor/local-notifications';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 export const usePushNotifications = () => {
   const [isRegistered, setIsRegistered] = useState(false);
@@ -37,7 +38,7 @@ export const usePushNotifications = () => {
 
       // Some issue with our setup and push will not work
       PushNotifications.addListener('registrationError', (error: any) => {
-        console.error('Error on registration: ', error);
+        logger.error('Error on registration: ', error);
         toast({
           title: 'Push notification error',
           description: 'Failed to enable notifications',
@@ -62,7 +63,7 @@ export const usePushNotifications = () => {
       });
 
     } catch (error) {
-      console.error('Push notification setup failed:', error);
+      logger.error('Push notification setup failed:', error);
     }
   };
 
@@ -86,7 +87,7 @@ export const usePushNotifications = () => {
         description: 'You will be notified about your outfit',
       });
     } catch (error) {
-      console.error('Failed to schedule notification:', error);
+      logger.error('Failed to schedule notification:', error);
       toast({
         title: 'Failed to set reminder',
         description: 'Could not schedule notification',

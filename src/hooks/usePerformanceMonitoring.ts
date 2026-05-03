@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { onCLS, onFCP, onLCP, onTTFB, type Metric } from 'web-vitals';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from "@/utils/logger";
 
 interface PerformanceMetric {
   name: string;
@@ -31,7 +32,7 @@ export function usePerformanceMonitoring() {
 
     // Log to console in development
     if (import.meta.env.DEV) {
-      console.log('Performance Metric:', performanceData);
+      logger.info('Performance Metric:', performanceData);
       return;
     }
 
@@ -45,7 +46,7 @@ export function usePerformanceMonitoring() {
         }
       });
     } catch (error) {
-      console.error('Failed to send performance metric:', error);
+      logger.error('Failed to send performance metric:', error);
     }
   };
 
@@ -67,7 +68,7 @@ export function usePerformanceMonitoring() {
     };
 
     if (import.meta.env.DEV) {
-      console.log('Custom Metric:', customMetric);
+      logger.info('Custom Metric:', customMetric);
       return;
     }
 
@@ -78,7 +79,7 @@ export function usePerformanceMonitoring() {
         user_id: user?.id
       }
     }).catch(error => {
-      console.error('Failed to send custom metric:', error);
+      logger.error('Failed to send custom metric:', error);
     });
   };
 

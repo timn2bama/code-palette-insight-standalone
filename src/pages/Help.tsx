@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import Navigation from "@/components/Navigation";
 import SEO from "@/components/SEO";
-import { Search, HelpCircle, BookOpen, Settings, Smartphone, Shield } from "lucide-react";
+import { Search, HelpCircle, BookOpen, Settings, Smartphone } from "lucide-react";
 import { PrivacyControls } from "@/components/PrivacyControls";
 import { useAuth } from "@/contexts/AuthContext";
 import { generateFAQJsonLd } from "@/utils/seo";

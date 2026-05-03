@@ -27,6 +27,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 interface WardrobeItem {
   id: string;
@@ -77,11 +78,11 @@ const SmartOutfitAI = ({ onOutfitCreated }: SmartOutfitAIProps) => {
       return;
     }
 
-    console.log('Starting Smart AI request...', { location, preferences, userId: user?.id });
+    logger.info('Starting Smart AI request...', { location, preferences, userId: user?.id });
     setLoading(true);
     
     try {
-      console.log('Calling supabase function...');
+      logger.info('Calling supabase function...');
       const { data, error } = await supabase.functions.invoke('smart-outfit-ai', {
         body: {
           location: location.trim(),
@@ -89,15 +90,15 @@ const SmartOutfitAI = ({ onOutfitCreated }: SmartOutfitAIProps) => {
         }
       });
 
-      console.log('Function response:', { data, error });
+      logger.info('Function response:', { data, error });
 
       if (error) {
-        console.error('Supabase function error:', error);
+        logger.error('Supabase function error:', error);
         throw error;
       }
 
       if (data.error) {
-        console.error('Function returned error:', data.error);
+        logger.error('Function returned error:', data.error);
         
         // Check if this is a quota limit error
         if (data.error.includes('quota limits') || data.error.includes('temporarily unavailable')) {
@@ -118,22 +119,17 @@ const SmartOutfitAI = ({ onOutfitCreated }: SmartOutfitAIProps) => {
       }
 
       if (data.suggestions && data.suggestions.length > 0) {
-        console.log('Success! Got suggestions:', data.suggestions.length);
+        logger.info('Success! Got suggestions:', data.suggestions.length);
         setSuggestions(data.suggestions);
         setWeather(data.weather);
         toast.success(`Generated ${data.suggestions.length} AI outfit suggestions!`);
       } else {
-        console.log('No suggestions generated:', data);
+        logger.info('No suggestions generated:', data);
         toast.error(data.message || "No suggestions could be generated");
         setSuggestions([]);
       }
-    } catch (error) {
-      console.error('Error in handleGenerateSuggestions:', error);
-      console.error('Error details:', {
-        message: error.message,
-        name: error.name,
-        stack: error.stack
-      });
+    } catch (error: any) {
+      logger.error('Error in handleGenerateSuggestions:', error);
       toast.error(`Failed to generate outfit suggestions: ${error.message}`);
       setSuggestions([]);
     } finally {
@@ -178,7 +174,7 @@ const SmartOutfitAI = ({ onOutfitCreated }: SmartOutfitAIProps) => {
       toast.success(`Saved "${suggestion.name}" to your outfits!`);
       onOutfitCreated?.();
     } catch (error) {
-      console.error('Error saving outfit:', error);
+      logger.error('Error saving outfit:', error);
       toast.error('Failed to save outfit');
     } finally {
       setSaving(null);

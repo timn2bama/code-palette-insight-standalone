@@ -50,7 +50,7 @@ export const useUploadLimits = () => {
   
   // Use React Query for subscription data
   const { data: subscriptionData } = useSubscriptionQuery(user?.id);
-  const { data: categoryCounts = [], isLoading: categoryCountsLoading } = useWardrobeItemsByCategory(user?.id) as { data: CategoryCount[], isLoading: boolean };
+  const { data: categoryCounts = [], isLoading: categoryCountsLoading } = useWardrobeItemsByCategory(user?.id) as unknown as { data: CategoryCount[], isLoading: boolean };
   
   const isSubscribed = subscriptionData?.subscribed || false;
   const loading = categoryCountsLoading;

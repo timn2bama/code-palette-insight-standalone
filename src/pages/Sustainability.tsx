@@ -1,4 +1,3 @@
-import React from 'react';
 import SustainabilityDashboard from '@/components/sustainability/SustainabilityDashboard';
 import SEO from '@/components/SEO';
 

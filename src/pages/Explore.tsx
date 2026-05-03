@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -8,7 +7,7 @@ import SocialOutfitCard from '@/components/social/SocialOutfitCard';
 import SocialViewOutfitDialog from '@/components/social/SocialViewOutfitDialog';
 import { useSocialOutfits, SocialOutfit } from '@/hooks/useSocialOutfits';
 import { useAuth } from '@/contexts/AuthContext';
-import { Search, TrendingUp, Users, Award } from 'lucide-react';
+import { Search, TrendingUp, Users, Award, Loader2 } from 'lucide-react';
 import SEO from '@/components/SEO';
 
 const Explore = () => {
@@ -50,8 +49,8 @@ const Explore = () => {
       const query = searchQuery.toLowerCase();
       filtered = filtered.filter(outfit =>
         outfit.name.toLowerCase().includes(query) ||
-        outfit.description?.toLowerCase().includes(query) ||
-        outfit.profiles?.display_name?.toLowerCase().includes(query)
+        (outfit.description || '').toLowerCase().includes(query) ||
+        (outfit.profiles?.display_name || '').toLowerCase().includes(query)
       );
     }
 
@@ -80,8 +79,9 @@ const Explore = () => {
           ? { 
               ...outfit, 
               _count: { 
-                ...outfit._count, 
-                likes: (outfit._count?.likes || 0) + 1 
+                likes: (outfit._count?.likes || 0) + 1,
+                comments: outfit._count?.comments || 0,
+                ratings: outfit._count?.ratings || 0
               },
               user_liked: true
             }
@@ -99,8 +99,9 @@ const Explore = () => {
           ? { 
               ...outfit, 
               _count: { 
-                ...outfit._count, 
-                likes: Math.max((outfit._count?.likes || 0) - 1, 0)
+                likes: Math.max(0, (outfit._count?.likes || 1) - 1),
+                comments: outfit._count?.comments || 0,
+                ratings: outfit._count?.ratings || 0
               },
               user_liked: false
             }
@@ -111,167 +112,168 @@ const Explore = () => {
 
   const handleRate = async (outfitId: string, rating: number) => {
     if (!user) return;
-    await rateOutfit(outfitId, rating);
-    // Optimistically update the UI
-    setOutfits(prev => prev.map(outfit => 
-      outfit.id === outfitId 
-        ? { ...outfit, user_rating: rating }
-        : outfit
-    ));
-  };
-
-  const handleComment = (outfitId: string) => {
-    // This would open a comment dialog - simplified for now
-    const comment = prompt('Add a comment:');
-    if (comment) {
-      addComment(outfitId, comment);
+    const success = await rateOutfit(outfitId, rating);
+    if (success) {
+      loadOutfits(); // Easier to reload to get new average
     }
   };
 
-  const occasions = Array.from(new Set(outfits.map(o => o.occasion).filter(Boolean)));
-  const seasons = Array.from(new Set(outfits.map(o => o.season).filter(Boolean)));
+  const handleComment = async (outfitId: string, content: string) => {
+    if (!user) return;
+    const success = await addComment(outfitId, content);
+    if (success) {
+      setOutfits(prev => prev.map(outfit => 
+        outfit.id === outfitId 
+          ? { 
+              ...outfit, 
+              _count: { 
+                likes: outfit._count?.likes || 0,
+                ratings: outfit._count?.ratings || 0,
+                comments: (outfit._count?.comments || 0) + 1 
+              }
+            }
+          : outfit
+      ));
+    }
+  };
+
+  const occasions = ['casual', 'formal', 'work', 'sport', 'date', 'party'];
+  const seasons = ['spring', 'summer', 'fall', 'winter'];
 
   return (
-    <>
+    <div className="min-h-screen bg-background">
       <SEO 
-        title="Explore Outfits - Style Discovery"
-        description="Discover trending outfit ideas, browse popular styles, and get inspired by fashion-forward looks from our community."
-        keywords="outfit inspiration, fashion trends, style discovery, wardrobe ideas"
+        title="Explore Community Outfits - SyncStyle"
+        description="Discover style inspiration from the SyncStyle community"
+        url="/explore"
       />
+      <Navigation />
       
-      <div className="min-h-screen bg-background">
-        <Navigation />
-        
-        <main className="container mx-auto px-4 py-8">
-          <div className="space-y-6">
-            <div className="text-center space-y-2">
-              <h1 className="text-3xl font-bold text-foreground">Explore Outfits</h1>
-              <p className="text-muted-foreground">
-                Discover trending styles and get inspired by the community
-              </p>
-            </div>
+      <div className="container mx-auto px-4 pt-24 pb-12">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+          <div>
+            <h1 className="text-4xl font-bold text-primary mb-2">Explore Community</h1>
+            <p className="text-muted-foreground">Discover style inspiration from fellow fashion enthusiasts</p>
+          </div>
+        </div>
 
-            <Tabs defaultValue="trending" className="space-y-6">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="trending" className="gap-2">
-                  <TrendingUp className="h-4 w-4" />
-                  Trending
-                </TabsTrigger>
-                <TabsTrigger value="recent" className="gap-2">
-                  <Users className="h-4 w-4" />
-                  Recent
-                </TabsTrigger>
-                <TabsTrigger value="top-rated" className="gap-2">
-                  <Award className="h-4 w-4" />
-                  Top Rated
-                </TabsTrigger>
-              </TabsList>
+        <Tabs defaultValue="all" className="space-y-6">
+          <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-secondary/20 p-4 rounded-xl">
+            <TabsList>
+              <TabsTrigger value="all" className="flex items-center gap-2">
+                <Users className="h-4 w-4" /> All
+              </TabsTrigger>
+              <TabsTrigger value="trending" className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4" /> Trending
+              </TabsTrigger>
+              <TabsTrigger value="featured" className="flex items-center gap-2">
+                <Award className="h-4 w-4" /> Featured
+              </TabsTrigger>
+            </TabsList>
 
-              <div className="flex flex-col lg:flex-row gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search outfits, creators, or styles..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-
-                <div className="flex gap-2">
-                  <Select value={occasionFilter} onValueChange={setOccasionFilter}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Occasion" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Occasions</SelectItem>
-                      {occasions.map((occasion) => (
-                        <SelectItem key={occasion} value={occasion}>
-                          {occasion}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-
-                  <Select value={seasonFilter} onValueChange={setSeasonFilter}>
-                    <SelectTrigger className="w-[120px]">
-                      <SelectValue placeholder="Season" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Seasons</SelectItem>
-                      {seasons.map((season) => (
-                        <SelectItem key={season} value={season}>
-                          {season}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search outfits, styles, or people..." 
+                  className="pl-10"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
               </div>
 
-              <TabsContent value="trending" className="space-y-6">
-                {loading ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {Array.from({ length: 6 }).map((_, i) => (
-                      <div key={i} className="bg-muted animate-pulse rounded-lg h-96" />
-                    ))}
-                  </div>
-                ) : filteredOutfits.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {filteredOutfits.map((outfit) => (
-                      <SocialOutfitCard
-                        key={outfit.id}
-                        outfit={outfit}
-                        onLike={handleLike}
-                        onUnlike={handleUnlike}
-                        onRate={handleRate}
-                        onComment={handleComment}
-                        onView={handleViewOutfit}
-                        userLiked={outfit.user_liked}
-                        userRating={outfit.user_rating}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-12">
-                    <Users className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-lg font-medium text-foreground mb-2">No outfits found</h3>
-                    <p className="text-muted-foreground">
-                      Try adjusting your filters or check back later for new content.
-                    </p>
-                  </div>
-                )}
-              </TabsContent>
+              <Select value={occasionFilter} onValueChange={setOccasionFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Occasion" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Occasions</SelectItem>
+                  {occasions.map(occasion => (
+                    <SelectItem key={occasion} value={occasion}>
+                      {occasion.charAt(0).toUpperCase() + occasion.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
-              <TabsContent value="recent">
-                <div className="text-center py-12 text-muted-foreground">
-                  Recent outfits view - Same layout as trending
-                </div>
-              </TabsContent>
-
-              <TabsContent value="top-rated">
-                <div className="text-center py-12 text-muted-foreground">
-                  Top rated outfits view - Same layout as trending
-                </div>
-              </TabsContent>
-            </Tabs>
+              <Select value={seasonFilter} onValueChange={setSeasonFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Season" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Seasons</SelectItem>
+                  {seasons.map(season => (
+                    <SelectItem key={season} value={season}>
+                      {season.charAt(0).toUpperCase() + season.slice(1)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
-        </main>
 
-        {selectedOutfit && (
-          <SocialViewOutfitDialog
-            open={viewDialogOpen}
-            onOpenChange={setViewDialogOpen}
-            outfit={selectedOutfit}
-            onLike={handleLike}
-            onUnlike={handleUnlike}
-            onRate={handleRate}
-            userLiked={selectedOutfit.user_liked}
-            userRating={selectedOutfit.user_rating}
-          />
-        )}
+          <TabsContent value="all" className="mt-0">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Fetching latest community styles...</p>
+              </div>
+            ) : filteredOutfits.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                {filteredOutfits.map((outfit) => (
+                  <SocialOutfitCard 
+                    key={outfit.id} 
+                    outfit={outfit}
+                    onView={() => handleViewOutfit(outfit)}
+                    onLike={() => handleLike(outfit.id)}
+                    onUnlike={() => handleUnlike(outfit.id)}
+                    onRate={(rating) => handleRate(outfit.id, Number(rating))}
+                    onComment={(content) => handleComment(outfit.id, content)}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-secondary/10 rounded-2xl border-2 border-dashed">
+                <Search className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+                <h3 className="text-xl font-bold">No outfits found</h3>
+                <p className="text-muted-foreground max-w-xs mx-auto mt-2">
+                  Try adjusting your filters or search query to find more inspiration.
+                </p>
+              </div>
+            )}
+          </TabsContent>
+          
+          <TabsContent value="trending">
+            <div className="text-center py-20">
+              <TrendingUp className="h-12 w-12 mx-auto mb-4 text-primary" />
+              <h3 className="text-xl font-bold">Trending Styles</h3>
+              <p className="text-muted-foreground mt-2">Coming soon to the SyncStyle community!</p>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="featured">
+            <div className="text-center py-20">
+              <Award className="h-12 w-12 mx-auto mb-4 text-fashion-gold" />
+              <h3 className="text-xl font-bold">Featured Creators</h3>
+              <p className="text-muted-foreground mt-2">Coming soon to the SyncStyle community!</p>
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
-    </>
+
+      {selectedOutfit && (
+        <SocialViewOutfitDialog 
+          outfit={selectedOutfit}
+          open={viewDialogOpen}
+          onOpenChange={setViewDialogOpen}
+          onLike={handleLike}
+          onUnlike={handleUnlike}
+          onRate={handleRate}
+          onComment={handleComment}
+          userLiked={selectedOutfit.user_liked}
+        />
+      )}
+    </div>
   );
 };
 

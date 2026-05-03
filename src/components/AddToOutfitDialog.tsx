@@ -8,6 +8,7 @@ import { Search, Plus, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 import CreateOutfitDialog from "./CreateOutfitDialog";
 
 interface Outfit {
@@ -76,7 +77,7 @@ const AddToOutfitDialog = ({ item, children }: AddToOutfitDialogProps) => {
       if (error) throw error;
       setOutfits(data || []);
     } catch (error) {
-      console.error('Error fetching outfits:', error);
+      logger.error('Error fetching outfits:', error);
       toast.error('Failed to load outfits');
     } finally {
       setLoading(false);
@@ -114,7 +115,7 @@ const AddToOutfitDialog = ({ item, children }: AddToOutfitDialogProps) => {
       toast.success(`Added "${item.name}" to "${outfit?.name}"`);
       setOpen(false);
     } catch (error) {
-      console.error('Error adding to outfit:', error);
+      logger.error('Error adding to outfit:', error);
       toast.error('Failed to add item to outfit');
     } finally {
       setAddingToOutfit(null);

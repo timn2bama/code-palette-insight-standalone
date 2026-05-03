@@ -8,6 +8,7 @@ import { TravelDestinations } from "@/components/weather/TravelDestinations";
 import { useWeatherData } from "@/hooks/queries/useWeatherData";
 import { useOutfitSuggestions } from "@/hooks/useOutfitSuggestions";
 import { useTravelDestinations } from "@/hooks/useTravelDestinations";
+import { logger } from "@/utils/logger";
 
 const Weather = () => {
   const { currentWeather, forecast, fetchAllWeatherData } = useWeatherData();
@@ -24,7 +25,7 @@ const Weather = () => {
         setAllWeatherData(data);
       }
     } catch (error) {
-      console.error('Failed to refresh weather data:', error);
+      logger.error('Failed to refresh weather data:', error);
     } finally {
       setRefreshing(false);
     }

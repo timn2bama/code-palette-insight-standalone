@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Upload, X } from 'lucide-react';
+import { logger } from "@/utils/logger";
 
 interface CreateMarketplaceListingDialogProps {
   open: boolean;
@@ -21,8 +21,8 @@ interface WardrobeItem {
   id: string;
   name: string;
   category: string;
-  brand: string;
-  photo_url: string;
+  brand: string | null;
+  photo_url: string | null;
 }
 
 const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogProps> = ({
@@ -52,16 +52,17 @@ const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogPro
   }, [open, user]);
 
   const fetchWardrobeItems = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('wardrobe_items')
         .select('id, name, category, brand, photo_url')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
       setWardrobeItems(data || []);
     } catch (error) {
-      console.error('Error fetching wardrobe items:', error);
+      logger.error('Error fetching wardrobe items:', error);
     }
   };
 
@@ -109,7 +110,7 @@ const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogPro
       onOpenChange(false);
       resetForm();
     } catch (error) {
-      console.error('Error creating listing:', error);
+      logger.error('Error creating listing:', error);
       toast({
         title: "Error",
         description: "Failed to create marketplace listing",

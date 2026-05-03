@@ -1,13 +1,6 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
-
-interface WalletPass {
-  id: string;
-  title: string;
-  description: string;
-  data: any;
-  passType: 'outfit' | 'loyalty' | 'subscription';
-}
+import { logger } from "@/utils/logger";
 
 export const useWalletIntegration = () => {
   const [isGenerating, setIsGenerating] = useState(false);
@@ -70,7 +63,7 @@ export const useWalletIntegration = () => {
 
       return url;
     } catch (error) {
-      console.error('Failed to generate wallet pass:', error);
+      logger.error('Failed to generate wallet pass:', error);
       toast({
         title: 'Failed to generate pass',
         description: 'Could not create wallet pass',
@@ -131,7 +124,7 @@ export const useWalletIntegration = () => {
 
       return url;
     } catch (error) {
-      console.error('Failed to generate loyalty pass:', error);
+      logger.error('Failed to generate loyalty pass:', error);
       toast({
         title: 'Failed to generate loyalty card',
         description: 'Could not create loyalty card',
@@ -194,7 +187,7 @@ export const useWalletIntegration = () => {
 
       return url;
     } catch (error) {
-      console.error('Failed to generate subscription pass:', error);
+      logger.error('Failed to generate subscription pass:', error);
       toast({
         title: 'Failed to generate subscription pass',
         description: 'Could not create subscription pass',

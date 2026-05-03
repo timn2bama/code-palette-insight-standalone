@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from "@/utils/logger";
 
 type AuditEventType = 
   | 'wardrobe_item_created'
@@ -28,7 +29,7 @@ export function useAuditLog() {
     try {
       // In development, just log to console
       if (import.meta.env.DEV) {
-        console.log('Audit Log:', {
+        logger.info('Audit Log:', {
           ...entry,
           user_id: user?.id,
           timestamp: new Date().toISOString()
@@ -49,7 +50,7 @@ export function useAuditLog() {
         }
       });
     } catch (error) {
-      console.error('Failed to log audit event:', error);
+      logger.error('Failed to log audit event:', error);
     }
   }, [user?.id]);
 
@@ -63,7 +64,7 @@ export function useAuditLog() {
         }
       });
     } catch (error) {
-      console.error('Failed to log security event:', error);
+      logger.error('Failed to log security event:', error);
     }
   }, [user?.id]);
 

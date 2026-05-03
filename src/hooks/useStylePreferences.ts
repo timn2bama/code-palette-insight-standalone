@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { logger } from "@/utils/logger";
 
 export interface StylePreferences {
   user_id: string;
@@ -38,9 +39,9 @@ export function useStylePreferences() {
         .maybeSingle();
 
       if (error) throw error;
-      setPreferences(data);
+      setPreferences(data as StylePreferences | null);
     } catch (error) {
-      console.error('Error fetching style preferences:', error);
+      logger.error('Error fetching style preferences:', error);
     } finally {
       setLoading(false);
     }
@@ -63,11 +64,11 @@ export function useStylePreferences() {
         .single();
 
       if (error) throw error;
-      setPreferences(data);
+      setPreferences(data as StylePreferences | null);
       toast.success('Style preferences updated!');
       return true;
     } catch (error) {
-      console.error('Error updating style preferences:', error);
+      logger.error('Error updating style preferences:', error);
       toast.error('Failed to update preferences');
       return false;
     }
@@ -99,8 +100,8 @@ export function useStylePreferences() {
         const currentFavorites = preferences.favorite_colors || [];
         const currentDislikes = preferences.disliked_colors || [];
 
-        let newFavorites = [...currentFavorites];
-        let newDislikes = [...currentDislikes];
+        const newFavorites = [...currentFavorites];
+        const newDislikes = [...currentDislikes];
 
         // This would be enhanced with actual color extraction from outfits
         // For now, we'll use a simple learning mechanism
@@ -122,7 +123,7 @@ export function useStylePreferences() {
         });
       }
     } catch (error) {
-      console.error('Error recording style feedback:', error);
+      logger.error('Error recording style feedback:', error);
     }
   }, [user, preferences, updatePreferences]);
 

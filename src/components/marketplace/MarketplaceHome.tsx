@@ -1,23 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useState, useEffect } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/contexts/AuthContext';
 import { Search, Filter, Heart, ShoppingBag, Leaf, Plus } from 'lucide-react';
 import CreateMarketplaceListingDialog from './CreateMarketplaceListingDialog';
 import RentalListingsDialog from './RentalListingsDialog';
+import { logger } from "@/utils/logger";
 
 interface MarketplaceItem {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   price: number;
   condition: string;
-  brand: string;
+  brand: string | null;
   category: string;
   size: string;
   photos: any;
@@ -27,7 +27,6 @@ interface MarketplaceItem {
 }
 
 const MarketplaceHome = () => {
-  const { user } = useAuth();
   const { toast } = useToast();
   const [items, setItems] = useState<MarketplaceItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,9 +50,9 @@ const MarketplaceHome = () => {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setItems(data || []);
+      setItems((data as any[]) || []);
     } catch (error) {
-      console.error('Error fetching marketplace items:', error);
+      logger.error('Error fetching marketplace items:', error);
       toast({
         title: "Error",
         description: "Failed to load marketplace items",
@@ -66,7 +65,7 @@ const MarketplaceHome = () => {
 
   const filteredItems = items.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         item.brand.toLowerCase().includes(searchTerm.toLowerCase());
+                         (item.brand?.toLowerCase() || '').includes(searchTerm.toLowerCase());
     const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter;
     const matchesCondition = conditionFilter === 'all' || item.condition === conditionFilter;
     

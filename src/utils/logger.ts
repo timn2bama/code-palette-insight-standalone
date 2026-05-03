@@ -9,12 +9,12 @@ export const logger = {
       console.warn(`[WARN] ${message}`, ...data);
     }
   },
-  error: (message: string, error?: any) => {
+  error: (message: string, ...data: any[]) => {
     if (import.meta.env.DEV) {
-      console.error(`[ERROR] ${message}`, error);
+      console.error(`[ERROR] ${message}`, ...data);
     } else {
       // In a real production app, we could send this to Sentry, LogRocket, etc.
-      // e.g. logToService({ level: 'error', message, error });
+      // e.g. logToService({ level: 'error', message, data });
     }
   }
 };

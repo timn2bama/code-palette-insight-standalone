@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from "@/utils/logger";
 
 interface UserSession {
   session_id: string;
@@ -57,7 +58,7 @@ export function useRealUserMonitoring() {
     };
 
     if (import.meta.env.DEV) {
-      console.log('RUM Session initialized:', session);
+      logger.info('RUM Session initialized:', session);
       return;
     }
 
@@ -69,7 +70,7 @@ export function useRealUserMonitoring() {
         }
       });
     } catch (error) {
-      console.error('Failed to initialize RUM session:', error);
+      logger.error('Failed to initialize RUM session:', error);
     }
   }, [user?.id]);
 
@@ -82,7 +83,7 @@ export function useRealUserMonitoring() {
     };
 
     if (import.meta.env.DEV) {
-      console.log('RUM Interaction:', fullInteraction);
+      logger.info('RUM Interaction:', fullInteraction);
       return;
     }
 
@@ -95,7 +96,7 @@ export function useRealUserMonitoring() {
         }
       });
     } catch (error) {
-      console.error('Failed to track interaction:', error);
+      logger.error('Failed to track interaction:', error);
     }
   }, []);
 
@@ -103,7 +104,7 @@ export function useRealUserMonitoring() {
     const sessionId = getSessionId();
 
     if (import.meta.env.DEV) {
-      console.log('RUM Page view:', path);
+      logger.info('RUM Page view:', path);
       return;
     }
 
@@ -117,7 +118,7 @@ export function useRealUserMonitoring() {
         }
       });
     } catch (error) {
-      console.error('Failed to track page view:', error);
+      logger.error('Failed to track page view:', error);
     }
   }, []);
 
@@ -125,7 +126,7 @@ export function useRealUserMonitoring() {
     const sessionId = getSessionId();
 
     if (import.meta.env.DEV) {
-      console.log('RUM Error:', error, context);
+      logger.info('RUM Error:', error, context);
       return;
     }
 
@@ -144,7 +145,7 @@ export function useRealUserMonitoring() {
         }
       });
     } catch (rumError) {
-      console.error('Failed to track error:', rumError);
+      logger.error('Failed to track error:', rumError);
     }
   }, []);
 

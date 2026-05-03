@@ -10,7 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Eye, Calendar, MapPin, Shirt, Palette } from "lucide-react";
+import { Calendar, MapPin, Shirt, Palette } from "lucide-react";
 import { LogOutfitWornDialog } from "@/components/LogOutfitWornDialog";
 
 interface OutfitItem {
@@ -22,7 +22,7 @@ interface OutfitItem {
     color: string | null;
     photo_url: string | null;
     brand?: string | null;
-  };
+  } | null;
 }
 
 interface Outfit {
@@ -38,9 +38,10 @@ interface Outfit {
 interface ViewOutfitDialogProps {
   outfit: Outfit;
   children: React.ReactNode;
+  onUpdate?: () => void;
 }
 
-const ViewOutfitDialog = ({ outfit, children }: ViewOutfitDialogProps) => {
+const ViewOutfitDialog = ({ outfit, children, onUpdate }: ViewOutfitDialogProps) => {
   const [open, setOpen] = useState(false);
 
   const formatDate = (dateString: string) => {
@@ -52,182 +53,110 @@ const ViewOutfitDialog = ({ outfit, children }: ViewOutfitDialogProps) => {
     });
   };
 
-  const groupItemsByCategory = (items: OutfitItem[]) => {
-    return items.reduce((acc, item) => {
-      const category = item.wardrobe_items.category;
-      if (!acc[category]) acc[category] = [];
-      acc[category].push(item);
-      return acc;
-    }, {} as Record<string, OutfitItem[]>);
+  // Helper to ensure compatibility with LogOutfitWornDialog's expected type
+  const getLoggableOutfit = () => {
+    return {
+      id: outfit.id,
+      name: outfit.name,
+      outfit_items: outfit.outfit_items
+        .filter(item => item.wardrobe_items !== null)
+        .map(item => ({
+          wardrobe_items: {
+            id: item.wardrobe_items!.id,
+            name: item.wardrobe_items!.name,
+            category: item.wardrobe_items!.category,
+            color: item.wardrobe_items!.color || undefined,
+            brand: item.wardrobe_items!.brand || undefined
+          }
+        }))
+    };
   };
-
-  const groupedItems = groupItemsByCategory(outfit.outfit_items);
-  const categoryOrder = ['tops', 'outerwear', 'bottoms', 'dresses', 'shoes', 'accessories'];
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         {children}
       </DialogTrigger>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[550px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle className="text-2xl text-primary">{outfit.name}</DialogTitle>
-          <DialogDescription className="text-base">
-            {outfit.description || "View your complete outfit details"}
+          <div className="flex justify-between items-start">
+            <div>
+              <DialogTitle className="text-2xl font-bold text-primary">{outfit.name}</DialogTitle>
+              <div className="flex items-center gap-2 mt-2">
+                <Badge variant="secondary" className="capitalize">{outfit.occasion || 'General'}</Badge>
+                {outfit.season && <Badge variant="outline" className="capitalize">{outfit.season}</Badge>}
+              </div>
+            </div>
+          </div>
+          <DialogDescription className="text-base mt-4">
+            {outfit.description || 'No description provided for this outfit.'}
           </DialogDescription>
         </DialogHeader>
 
+        <Separator className="my-4" />
+
         <div className="space-y-6">
-          {/* Outfit Info */}
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
-              Created {formatDate(outfit.created_at)}
+              <span>Created {formatDate(outfit.created_at)}</span>
             </div>
-            {outfit.occasion && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                <MapPin className="h-3 w-3" />
-                {outfit.occasion.charAt(0).toUpperCase() + outfit.occasion.slice(1)}
-              </Badge>
-            )}
-            {outfit.season && (
-              <Badge variant="outline" className="flex items-center gap-1">
-                <Palette className="h-3 w-3" />
-                {outfit.season.charAt(0).toUpperCase() + outfit.season.slice(1)}
-              </Badge>
-            )}
+            <div className="flex items-center gap-1">
+              <MapPin className="h-4 w-4" />
+              <span>Local Style</span>
+            </div>
           </div>
 
-          <Separator />
-
-          {/* Outfit Items by Category */}
-          {outfit.outfit_items.length > 0 ? (
-            <div className="space-y-6">
-              <div className="flex items-center gap-2 text-lg font-semibold text-primary">
-                <Shirt className="h-5 w-5" />
-                Outfit Items ({outfit.outfit_items.length})
-              </div>
-              
-              {categoryOrder.map(category => {
-                const items = groupedItems[category];
-                if (!items || items.length === 0) return null;
-                
+          <div>
+            <h3 className="font-semibold text-lg mb-3 flex items-center gap-2">
+              <Shirt className="h-5 w-5 text-fashion-gold" />
+              Outfit Items
+            </h3>
+            <div className="grid gap-3">
+              {outfit.outfit_items.map((item) => {
+                if (!item.wardrobe_items) return null;
+                const wi = item.wardrobe_items;
                 return (
-                  <div key={category} className="space-y-3">
-                    <h3 className="font-medium text-foreground capitalize">
-                      {category} ({items.length})
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {items.map((outfitItem) => (
-                        <div
-                          key={outfitItem.id}
-                          className="bg-secondary/20 rounded-lg p-4 hover:bg-secondary/30 transition-colors"
-                        >
-                          <div className="flex items-start gap-3">
-                            {outfitItem.wardrobe_items.photo_url ? (
-                              <img
-                                src={outfitItem.wardrobe_items.photo_url}
-                                alt={outfitItem.wardrobe_items.name}
-                                className="w-16 h-16 object-cover rounded-lg border border-border"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-gradient-subtle rounded-lg flex items-center justify-center text-2xl border border-border">
-                                👕
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-foreground">
-                                {outfitItem.wardrobe_items.name}
-                              </h4>
-                              {outfitItem.wardrobe_items.brand && (
-                                <p className="text-sm text-muted-foreground">
-                                  {outfitItem.wardrobe_items.brand}
-                                </p>
-                              )}
-                              {outfitItem.wardrobe_items.color && (
-                                <p className="text-sm text-muted-foreground">
-                                  {outfitItem.wardrobe_items.color}
-                                </p>
-                              )}
-                            </div>
-                          </div>
+                  <div key={item.id} className="flex items-center gap-4 p-3 rounded-xl bg-secondary/20 hover:bg-secondary/30 transition-colors border border-transparent hover:border-secondary">
+                    <div className="h-16 w-16 rounded-lg overflow-hidden bg-white shadow-sm flex-shrink-0">
+                      {wi.photo_url ? (
+                        <img 
+                          src={wi.photo_url} 
+                          alt={wi.name} 
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center bg-secondary/50">
+                          <Shirt className="h-6 w-6 text-muted-foreground" />
                         </div>
-                      ))}
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-primary truncate">{wi.name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-[10px] uppercase font-semibold">
+                          {wi.category}
+                        </Badge>
+                        {wi.color && (
+                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                            <Palette className="h-3 w-3" />
+                            <span>{wi.color}</span>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
               })}
-
-              {/* Show any uncategorized items */}
-              {Object.keys(groupedItems).some(cat => !categoryOrder.includes(cat)) && (
-                <div className="space-y-3">
-                  <h3 className="font-medium text-foreground">Other Items</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {Object.entries(groupedItems)
-                      .filter(([category]) => !categoryOrder.includes(category))
-                      .flatMap(([, items]) => items)
-                      .map((outfitItem) => (
-                        <div
-                          key={outfitItem.id}
-                          className="bg-secondary/20 rounded-lg p-4 hover:bg-secondary/30 transition-colors"
-                        >
-                          <div className="flex items-start gap-3">
-                            {outfitItem.wardrobe_items.photo_url ? (
-                              <img
-                                src={outfitItem.wardrobe_items.photo_url}
-                                alt={outfitItem.wardrobe_items.name}
-                                className="w-16 h-16 object-cover rounded-lg border border-border"
-                              />
-                            ) : (
-                              <div className="w-16 h-16 bg-gradient-subtle rounded-lg flex items-center justify-center text-2xl border border-border">
-                                👕
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <h4 className="font-medium text-foreground">
-                                {outfitItem.wardrobe_items.name}
-                              </h4>
-                              {outfitItem.wardrobe_items.brand && (
-                                <p className="text-sm text-muted-foreground">
-                                  {outfitItem.wardrobe_items.brand}
-                                </p>
-                              )}
-                              {outfitItem.wardrobe_items.color && (
-                                <p className="text-sm text-muted-foreground">
-                                  {outfitItem.wardrobe_items.color}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
             </div>
-          ) : (
-            <div className="text-center py-8 text-muted-foreground">
-              <Shirt className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p>No items in this outfit yet</p>
-            </div>
-          )}
+          </div>
 
-          <Separator />
-
-          {/* Actions */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <LogOutfitWornDialog outfit={outfit}>
-              <Button className="flex-1">
-                <Calendar className="h-4 w-4 mr-2" />
-                Mark as Worn
+          <div className="pt-2">
+            <LogOutfitWornDialog outfit={getLoggableOutfit()} onLogged={onUpdate}>
+              <Button className="w-full bg-gradient-primary hover:bg-gradient-primary/90 text-white font-bold h-12 rounded-xl shadow-lg">
+                LOG OUTFIT AS WORN TODAY
               </Button>
             </LogOutfitWornDialog>
-            <Button variant="outline" className="flex-1" disabled>
-              Share Outfit
-            </Button>
-            <Button variant="outline" className="flex-1" disabled>
-              Edit Outfit
-            </Button>
           </div>
         </div>
       </DialogContent>

@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Heart, MessageCircle, Star, Share2, Eye, Shirt } from 'lucide-react';
+import { Heart, MessageCircle, Star, Eye, Shirt } from 'lucide-react';
 import { SocialOutfit } from '@/hooks/useSocialOutfits';
 import ProgressiveImage from '@/components/ProgressiveImage';
 import { formatDistanceToNow } from 'date-fns';

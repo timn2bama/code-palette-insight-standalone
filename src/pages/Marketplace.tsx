@@ -1,4 +1,3 @@
-import React from 'react';
 import MarketplaceHome from '@/components/marketplace/MarketplaceHome';
 import SEO from '@/components/SEO';
 

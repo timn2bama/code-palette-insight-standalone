@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from "@/utils/logger";
 
 interface Integration {
   id: string;
   integration_type: string;
   settings: any;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
+  is_active: boolean | null;
+  created_at: string | null;
+  updated_at: string | null;
 }
 
 interface CalendarEvent {
@@ -35,7 +36,7 @@ export const useIntegrations = () => {
       if (error) throw error;
       setIntegrations(data || []);
     } catch (error) {
-      console.error('Error fetching integrations:', error);
+      logger.error('Error fetching integrations:', error);
     } finally {
       setLoading(false);
     }
@@ -77,7 +78,7 @@ export const useIntegrations = () => {
 
       fetchIntegrations(); // Refresh data
     } catch (error) {
-      console.error('Error updating integration:', error);
+      logger.error('Error updating integration:', error);
       throw error;
     }
   };
@@ -96,7 +97,7 @@ export const useIntegrations = () => {
       if (error) throw error;
       return data;
     } catch (error) {
-      console.error('Error getting weather recommendations:', error);
+      logger.error('Error getting weather recommendations:', error);
       return null;
     }
   };
@@ -139,7 +140,7 @@ export const useIntegrations = () => {
 
     try {
       // Mock sharing - in real implementation, this would use actual social media APIs
-      console.log('Sharing outfit to platforms:', platforms, outfitData);
+      logger.info('Sharing outfit to platforms:', platforms, outfitData);
       
       // Here you would implement actual sharing logic for each platform
       // For now, we'll just simulate it
@@ -147,13 +148,13 @@ export const useIntegrations = () => {
       
       return true;
     } catch (error) {
-      console.error('Error sharing outfit:', error);
+      logger.error('Error sharing outfit:', error);
       return false;
     }
   };
 
   // Shopping platform integration
-  const findSimilarItems = async (itemDescription: string, category: string) => {
+  const findSimilarItems = async (_itemDescription: string, category: string) => {
     try {
       // Mock shopping recommendations - in real implementation, 
       // this would integrate with Amazon Product Advertising API, etc.
@@ -176,7 +177,7 @@ export const useIntegrations = () => {
 
       return mockItems;
     } catch (error) {
-      console.error('Error finding similar items:', error);
+      logger.error('Error finding similar items:', error);
       return [];
     }
   };

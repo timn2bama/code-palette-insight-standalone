@@ -1,9 +1,10 @@
 // Copyright (c) 2025 Tim N. (timn2bama)
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file in the project root for license information.
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { logger } from "@/utils/logger";
 
 interface WardrobeItem {
   id: string;
@@ -42,7 +43,7 @@ export const useOutfitRecommendations = () => {
       const outfitSuggestions = generateOutfitCombinations(wardrobeItems, baseItem);
       setSuggestions(outfitSuggestions);
     } catch (error) {
-      console.error('Error generating outfit suggestions:', error);
+      logger.error('Error generating outfit suggestions:', error);
     } finally {
       setLoading(false);
     }
@@ -175,7 +176,7 @@ export const useOutfitRecommendations = () => {
 
       return outfit;
     } catch (error) {
-      console.error('Error creating outfit from suggestion:', error);
+      logger.error('Error creating outfit from suggestion:', error);
       throw error;
     }
   };

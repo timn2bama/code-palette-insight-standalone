@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { validateTextInput, getSafeErrorMessage, rateLimiter } from "@/lib/security";
 import { useAuditLog } from "@/hooks/useAuditLog";
+import { logger } from "@/utils/logger";
 
 interface CreateOutfitDialogProps {
   onOutfitCreated?: () => void;
@@ -105,7 +106,7 @@ const CreateOutfitDialog = ({ onOutfitCreated, children, initialItem }: CreateOu
       setOpen(false);
       onOutfitCreated?.();
     } catch (error) {
-      console.error('Error creating outfit:', error);
+      logger.error('Error creating outfit:', error);
       toast.error(getSafeErrorMessage(error));
     } finally {
       setLoading(false);

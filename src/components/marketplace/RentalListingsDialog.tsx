@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Calendar, DollarSign, Package, Plus } from 'lucide-react';
 import CreateRentalListingDialog from './CreateRentalListingDialog';
+import { logger } from "@/utils/logger";
 
 interface RentalListingsDialogProps {
   open: boolean;
@@ -17,13 +18,13 @@ interface RentalListingsDialogProps {
 interface RentalItem {
   id: string;
   title: string;
-  description: string;
+  description: string | null;
   daily_rate: number;
-  weekly_rate: number;
+  weekly_rate: number | null;
   deposit_amount: number;
   category: string;
   size: string;
-  brand: string;
+  brand: string | null;
   photos: any;
   created_at: string;
 }
@@ -53,9 +54,9 @@ const RentalListingsDialog: React.FC<RentalListingsDialogProps> = ({
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRentalItems(data || []);
+      setRentalItems((data as any[]) || []);
     } catch (error) {
-      console.error('Error fetching rental items:', error);
+      logger.error('Error fetching rental items:', error);
       toast({
         title: "Error",
         description: "Failed to load rental items",

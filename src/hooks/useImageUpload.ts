@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { compressImage } from '@/utils/imageCompression';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 interface UploadProgress {
   loaded: number;
@@ -49,7 +50,7 @@ export const useImageUpload = () => {
 
       return publicUrl;
     } catch (error) {
-      console.error('Upload error:', error);
+      logger.error('Upload error:', error);
       toast({
         title: "Upload Failed",
         description: "Failed to upload image. Please try again.",

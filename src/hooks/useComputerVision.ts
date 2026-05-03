@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 interface ClothingAnalysis {
   category: string;
@@ -81,7 +82,7 @@ export const useComputerVision = () => {
 
       return analysis;
     } catch (error) {
-      console.error('Computer vision analysis error:', error);
+      logger.error('Computer vision analysis error:', error);
       toast({
         title: 'Analysis failed',
         description: 'Failed to analyze image. Please try again.',
@@ -105,7 +106,7 @@ export const useComputerVision = () => {
 
       return analysis?.colors.palette || null;
     } catch (error) {
-      console.error('Color extraction error:', error);
+      logger.error('Color extraction error:', error);
       return null;
     }
   }, [analyzeClothingImage]);
@@ -122,7 +123,7 @@ export const useComputerVision = () => {
 
       return analysis?.category || null;
     } catch (error) {
-      console.error('Categorization error:', error);
+      logger.error('Categorization error:', error);
       return null;
     }
   }, [analyzeClothingImage]);
@@ -139,7 +140,7 @@ export const useComputerVision = () => {
 
       return analysis?.fit_assessment || null;
     } catch (error) {
-      console.error('Fit assessment error:', error);
+      logger.error('Fit assessment error:', error);
       return null;
     }
   }, [analyzeClothingImage]);
@@ -156,7 +157,7 @@ export const useComputerVision = () => {
 
       return analysis?.fabric || null;
     } catch (error) {
-      console.error('Fabric analysis error:', error);
+      logger.error('Fabric analysis error:', error);
       return null;
     }
   }, [analyzeClothingImage]);

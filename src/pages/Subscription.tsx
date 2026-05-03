@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { useNavigate } from "react-router-dom";
+import { logger } from "@/utils/logger";
 
 interface SubscriptionStatus {
   subscribed: boolean;
@@ -32,7 +33,7 @@ export default function Subscription() {
       if (error) throw error;
       setSubscriptionStatus(data);
     } catch (error) {
-      console.error('Error checking subscription:', error);
+      logger.error('Error checking subscription:', error);
       // Set default state instead of showing repeated error toasts
       setSubscriptionStatus({ subscribed: false });
     } finally {
@@ -51,7 +52,7 @@ export default function Subscription() {
       // Open Stripe checkout in a new tab
       window.open(data.url, '_blank');
     } catch (error) {
-      console.error('Error creating checkout:', error);
+      logger.error('Error creating checkout:', error);
       toast({
         title: "Error",
         description: "Failed to create checkout session",
@@ -73,7 +74,7 @@ export default function Subscription() {
       // Open Stripe customer portal in a new tab
       window.open(data.url, '_blank');
     } catch (error) {
-      console.error('Error opening customer portal:', error);
+      logger.error('Error opening customer portal:', error);
       toast({
         title: "Error",
         description: "Failed to open customer portal",

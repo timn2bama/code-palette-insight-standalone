@@ -1,13 +1,14 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 interface SavedService {
   id: string;
   user_id: string;
   service_name: string;
   service_address: string;
-  service_phone?: string;
+  service_phone: string | null;
   service_data: any;
   created_at: string;
   updated_at: string;
@@ -30,7 +31,7 @@ export const useSavedServices = () => {
       if (error) throw error;
       setSavedServices(data || []);
     } catch (error: any) {
-      console.error('Error fetching saved services:', error);
+      logger.error('Error fetching saved services:', error);
       toast({
         title: "Error",
         description: "Failed to load saved services",
@@ -87,7 +88,7 @@ export const useSavedServices = () => {
       await fetchSavedServices();
       return true;
     } catch (error: any) {
-      console.error('Error saving service:', error);
+      logger.error('Error saving service:', error);
       toast({
         title: "Error",
         description: "Failed to save service",
@@ -121,7 +122,7 @@ export const useSavedServices = () => {
       await fetchSavedServices();
       return true;
     } catch (error: any) {
-      console.error('Error removing saved service:', error);
+      logger.error('Error removing saved service:', error);
       toast({
         title: "Error",
         description: "Failed to remove service",

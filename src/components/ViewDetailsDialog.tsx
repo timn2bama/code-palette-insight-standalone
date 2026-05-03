@@ -4,8 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { ChevronLeft, ChevronRight, Upload, Eye, Camera, ImagePlus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, Camera, ImagePlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import { supabase } from "@/integrations/supabase/client";
@@ -13,6 +12,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import AddToOutfitDialog from "./AddToOutfitDialog";
 import OutfitSuggestionsDialog from "./OutfitSuggestionsDialog";
+import { logger } from "@/utils/logger";
 
 interface ClothingItem {
   id: string;
@@ -44,7 +44,7 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
   const hasPhotos = photos.length > 0;
 
   useEffect(() => {
-    console.log('ViewDetailsDialog - Item received:', {
+    logger.info('ViewDetailsDialog - Item received:', {
       id: item.id,
       name: item.name,
       photo_url: item.photo_url,
@@ -69,7 +69,7 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
     const file = event.target.files?.[0];
     if (!file || !user) return;
 
-    console.log('ViewDetailsDialog - File upload started:', file.name, file.size);
+    logger.info('ViewDetailsDialog - File upload started:', file.name, file.size);
 
     // Create preview URL
     const previewUrl = URL.createObjectURL(file);
@@ -83,24 +83,24 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
       const fileExt = uploadFile.name.split('.').pop();
       const fileName = `${user.id}/${item.id}/${Date.now()}.${fileExt}`;
 
-      console.log('ViewDetailsDialog - Uploading to:', fileName, 'originalSize:', file.size, 'uploadSize:', uploadFile.size);
+      logger.info('ViewDetailsDialog - Uploading to:', fileName, 'originalSize:', file.size, 'uploadSize:', uploadFile.size);
 
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('wardrobe-photos')
         .upload(fileName, uploadFile);
 
       if (uploadError) {
-        console.error('ViewDetailsDialog - Upload error:', uploadError);
+        logger.error('ViewDetailsDialog - Upload error:', uploadError);
         throw uploadError;
       }
 
-      console.log('ViewDetailsDialog - Upload successful:', uploadData);
+      logger.info('ViewDetailsDialog - Upload successful:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('wardrobe-photos')
         .getPublicUrl(fileName);
 
-      console.log('ViewDetailsDialog - Public URL:', publicUrl);
+      logger.info('ViewDetailsDialog - Public URL:', publicUrl);
 
       const { error: updateError, data: updateData } = await supabase
         .from('wardrobe_items')
@@ -109,17 +109,17 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
         .select();
 
       if (updateError) {
-        console.error('ViewDetailsDialog - Update error:', updateError);
+        logger.error('ViewDetailsDialog - Update error:', updateError);
         throw updateError;
       }
 
-      console.log('ViewDetailsDialog - Update successful:', updateData);
+      logger.info('ViewDetailsDialog - Update successful:', updateData);
 
       toast.success('Photo uploaded successfully!');
       setPreviewImage(null); // Clear preview
       onItemUpdated?.();
     } catch (error) {
-      console.error('Error uploading photo:', error);
+      logger.error('Error uploading photo:', error);
       toast.error('Failed to upload photo');
       setPreviewImage(null); // Clear preview on error
     } finally {
@@ -146,7 +146,7 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
       toast.success(`Marked "${item.name}" as worn today!`);
       onItemUpdated?.(); // Refresh the data
     } catch (error) {
-      console.error('Error marking item as worn:', error);
+      logger.error('Error marking item as worn:', error);
       toast.error('Failed to mark item as worn');
     }
   };

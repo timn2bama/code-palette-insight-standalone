@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logger } from "@/utils/logger";
 
 interface UserData {
   profile: any;
@@ -55,7 +56,7 @@ export function useDataExport() {
       toast.success('Your data has been exported successfully');
       return true;
     } catch (error) {
-      console.error('Failed to export data:', error);
+      logger.error('Failed to export data:', error);
       toast.error('Failed to export data. Please try again.');
       return false;
     } finally {
@@ -82,7 +83,7 @@ export function useDataExport() {
       toast.success('All your data has been permanently deleted');
       return true;
     } catch (error) {
-      console.error('Failed to delete user data:', error);
+      logger.error('Failed to delete user data:', error);
       toast.error('Failed to delete data. Please contact support.');
       return false;
     }

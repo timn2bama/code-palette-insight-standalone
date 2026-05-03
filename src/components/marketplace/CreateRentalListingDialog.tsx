@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from "@/utils/logger";
 
 interface CreateRentalListingDialogProps {
   open: boolean;
@@ -19,8 +20,8 @@ interface WardrobeItem {
   id: string;
   name: string;
   category: string;
-  brand: string;
-  photo_url: string;
+  brand: string | null;
+  photo_url: string | null;
 }
 
 const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
@@ -51,16 +52,17 @@ const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
   }, [open, user]);
 
   const fetchWardrobeItems = async () => {
+    if (!user) return;
     try {
       const { data, error } = await supabase
         .from('wardrobe_items')
         .select('id, name, category, brand, photo_url')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (error) throw error;
-      setWardrobeItems(data || []);
+      setWardrobeItems((data as any[]) || []);
     } catch (error) {
-      console.error('Error fetching wardrobe items:', error);
+      logger.error('Error fetching wardrobe items:', error);
     }
   };
 
@@ -70,7 +72,7 @@ const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
       setFormData(prev => ({
         ...prev,
         wardrobe_item_id: itemId,
-        title: `${item.brand} ${item.name}`,
+        title: `${item.brand || ''} ${item.name}`,
       }));
     }
   };
@@ -81,6 +83,7 @@ const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
 
     setLoading(true);
     try {
+      const selectedItem = wardrobeItems.find(i => i.id === formData.wardrobe_item_id);
       const { error } = await supabase
         .from('rental_items')
         .insert({
@@ -94,8 +97,8 @@ const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
           size: formData.size,
           rental_terms: formData.rental_terms,
           care_instructions: formData.care_instructions,
-          category: wardrobeItems.find(i => i.id === formData.wardrobe_item_id)?.category || 'other',
-          brand: wardrobeItems.find(i => i.id === formData.wardrobe_item_id)?.brand || '',
+          category: selectedItem?.category || 'other',
+          brand: selectedItem?.brand || '',
         });
 
       if (error) throw error;
@@ -109,7 +112,7 @@ const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
       onOpenChange(false);
       resetForm();
     } catch (error) {
-      console.error('Error creating rental listing:', error);
+      logger.error('Error creating rental listing:', error);
       toast({
         title: "Error",
         description: "Failed to create rental listing",
@@ -158,7 +161,7 @@ const CreateRentalListingDialog: React.FC<CreateRentalListingDialogProps> = ({
               <SelectContent>
                 {wardrobeItems.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
-                    {item.brand} {item.name} ({item.category})
+                    {item.brand || 'Unbranded'} {item.name} ({item.category})
                   </SelectItem>
                 ))}
               </SelectContent>

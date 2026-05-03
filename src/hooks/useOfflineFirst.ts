@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Network } from '@capacitor/network';
-import { Preferences } from '@capacitor/preferences';
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 interface OfflineDB extends DBSchema {
   wardrobeItems: {
@@ -51,7 +51,7 @@ export const useOfflineFirst = () => {
       });
       setDb(database);
     } catch (error) {
-      console.error('Failed to initialize offline storage:', error);
+      logger.error('Failed to initialize offline storage:', error);
     }
   };
 
@@ -83,7 +83,7 @@ export const useOfflineFirst = () => {
     try {
       await db.put(store, data);
     } catch (error) {
-      console.error(`Failed to store ${store} offline:`, error);
+      logger.error(`Failed to store ${store} offline:`, error);
     }
   };
 
@@ -97,7 +97,7 @@ export const useOfflineFirst = () => {
         return await db.getAll(store);
       }
     } catch (error) {
-      console.error(`Failed to get ${store} offline:`, error);
+      logger.error(`Failed to get ${store} offline:`, error);
       return null;
     }
   };
@@ -116,7 +116,7 @@ export const useOfflineFirst = () => {
       await db.put('pendingActions', pendingAction);
       setPendingActions(prev => [...prev, pendingAction]);
     } catch (error) {
-      console.error('Failed to store pending action:', error);
+      logger.error('Failed to store pending action:', error);
     }
   };
 
@@ -132,7 +132,7 @@ export const useOfflineFirst = () => {
           await processPendingAction(action);
           await db.delete('pendingActions', action.id);
         } catch (error) {
-          console.error('Failed to sync action:', error);
+          logger.error('Failed to sync action:', error);
         }
       }
 
@@ -142,7 +142,7 @@ export const useOfflineFirst = () => {
         description: 'All changes have been synchronized',
       });
     } catch (error) {
-      console.error('Failed to sync pending actions:', error);
+      logger.error('Failed to sync pending actions:', error);
     }
   };
 
@@ -162,7 +162,7 @@ export const useOfflineFirst = () => {
         // Call your Supabase create outfit function
         break;
       default:
-        console.warn('Unknown action type:', action.action);
+        logger.warn('Unknown action type:', action.action);
     }
   };
 
@@ -176,7 +176,7 @@ export const useOfflineFirst = () => {
       await db.clear('pendingActions');
       setPendingActions([]);
     } catch (error) {
-      console.error('Failed to clear offline data:', error);
+      logger.error('Failed to clear offline data:', error);
     }
   };
 

@@ -7,6 +7,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 import { TrendingUp, TrendingDown, Shirt, Palette, Calendar, Target } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
+import { logger } from "@/utils/logger";
 
 interface WardrobeStats {
   totalItems: number;
@@ -36,17 +37,19 @@ const WardrobeAnalyticsDashboard = () => {
     try {
       setLoading(true);
       
+      if (!user) return;
+      
       // Fetch wardrobe items
       const { data: items } = await supabase
         .from('wardrobe_items')
         .select('*')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       // Fetch outfits
       const { data: outfits } = await supabase
         .from('outfits')
         .select('*')
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (!items || !outfits) return;
 
@@ -68,7 +71,7 @@ const WardrobeAnalyticsDashboard = () => {
 
       // Color distribution (simplified - would need actual color extraction)
       const colors = ['Blue', 'Black', 'White', 'Gray', 'Red', 'Green'];
-      const colorDistribution = colors.map((color, index) => ({
+      const colorDistribution = colors.map((color) => ({
         color,
         count: Math.floor(Math.random() * 20) + 5,
         percentage: Math.floor(Math.random() * 15) + 5
@@ -122,7 +125,7 @@ const WardrobeAnalyticsDashboard = () => {
         seasonalAnalysis
       });
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      logger.error('Error fetching analytics:', error);
     } finally {
       setLoading(false);
     }
@@ -243,7 +246,7 @@ const WardrobeAnalyticsDashboard = () => {
                       paddingAngle={5}
                       dataKey="count"
                     >
-                      {stats.categoryDistribution.map((entry, index) => (
+                      {stats.categoryDistribution.map((_, index) => (
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>

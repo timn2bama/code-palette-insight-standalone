@@ -1,5 +1,6 @@
 import { supabase } from '@/integrations/supabase/client';
-import type { PremiumFeature, SubscriptionTier, UsageData, UpgradeModalData } from '@/types/premium';
+import type { PremiumFeature, SubscriptionTier, UpgradeModalData } from '@/types/premium';
+import { logger } from "@/utils/logger";
 
 class PremiumFeatureGate {
   private featureMetadata: Record<PremiumFeature, { name: string; benefits: string[]; requiredTier: string }> = {
@@ -118,7 +119,7 @@ class PremiumFeatureGate {
       const { data: tier } = await supabase
         .from('subscription_tiers')
         .select('features, tier_name')
-        .eq('tier_name', subscription.subscription_tier)
+        .eq('tier_name', subscription.subscription_tier || 'free')
         .eq('is_active', true)
         .single();
 
@@ -130,7 +131,7 @@ class PremiumFeatureGate {
       const tierFeatures = tier.features as PremiumFeature[];
       return tierFeatures.includes(feature);
     } catch (error) {
-      console.error('Error checking feature access:', error);
+      logger.error('Error checking feature access:', error);
       return false;
     }
   }
@@ -157,14 +158,15 @@ class PremiumFeatureGate {
       const { data: tier } = await supabase
         .from('subscription_tiers')
         .select('limits')
-        .eq('tier_name', subscription.subscription_tier)
+        .eq('tier_name', subscription.subscription_tier || 'free')
         .single();
 
-      if (!tier) {
+      if (!tier || !tier.limits) {
         return { allowed: false, remaining: 0 };
       }
 
-      const limit = tier.limits[`${usageType}_per_month`];
+      const limits = tier.limits as Record<string, any>;
+      const limit = limits[`${usageType}_per_month`];
       
       // Unlimited usage
       if (limit === -1) {
@@ -178,7 +180,7 @@ class PremiumFeatureGate {
         remaining: Math.max(0, limit - usage),
       };
     } catch (error) {
-      console.error('Error checking usage limit:', error);
+      logger.error('Error checking usage limit:', error);
       return { allowed: false, remaining: 0 };
     }
   }
@@ -196,7 +198,7 @@ class PremiumFeatureGate {
       .gte('billing_period_start', startOfMonth.toISOString())
       .lte('billing_period_end', endOfMonth.toISOString());
 
-    return data?.reduce((sum, item) => sum + item.usage_count, 0) || 0;
+    return data?.reduce((sum, item) => sum + (item.usage_count || 0), 0) || 0;
   }
 
   async getUpgradePromptData(userId: string, feature: PremiumFeature): Promise<UpgradeModalData> {

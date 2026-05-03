@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { premiumFeatureGate } from '@/lib/premiumFeatureGate';
 import type { PremiumFeature } from '@/types/premium';
+import { logger } from "@/utils/logger";
 
 export function usePremiumFeature(feature: PremiumFeature) {
   const { user } = useAuth();
@@ -25,7 +26,7 @@ export function usePremiumFeature(feature: PremiumFeature) {
 
       return true;
     } catch (error) {
-      console.error('Error checking feature access:', error);
+      logger.error('Error checking feature access:', error);
       setShowUpgradeModal(true);
       return false;
     } finally {
@@ -70,7 +71,7 @@ export function useUsageLimit(usageType: 'ai_recommendations' | 'photo_uploads' 
 
       return result;
     } catch (error) {
-      console.error('Error checking usage limit:', error);
+      logger.error('Error checking usage limit:', error);
       return { allowed: false, remaining: 0 };
     } finally {
       setIsChecking(false);

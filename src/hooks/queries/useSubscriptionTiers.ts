@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from "@/utils/logger";
 
 interface SubscriptionTier {
   id: string;
@@ -38,20 +39,32 @@ export const useSubscriptionTiers = () => {
         .order('price_monthly', { ascending: true });
 
       if (error) throw error;
-      setTiers(data || []);
+      
+      const transformedTiers: SubscriptionTier[] = (data || []).map(tier => ({
+        id: tier.id,
+        tier_name: tier.tier_name,
+        price_monthly: tier.price_monthly || 0,
+        price_yearly: tier.price_yearly || 0,
+        features: tier.features,
+        limits: tier.limits,
+        is_active: tier.is_active || false
+      }));
+
+      setTiers(transformedTiers);
 
       // Determine current tier based on subscription status
       if (subscriptionStatus.subscribed && subscriptionStatus.subscription_tier) {
-        const current = data?.find(tier => 
-          tier.tier_name.toLowerCase() === subscriptionStatus.subscription_tier?.toLowerCase()
+        const tierName = subscriptionStatus.subscription_tier;
+        const current = transformedTiers.find(tier => 
+          tier.tier_name.toLowerCase() === tierName.toLowerCase()
         );
         setCurrentTier(current || null);
       } else {
-        const freeTier = data?.find(tier => tier.tier_name.toLowerCase() === 'free');
+        const freeTier = transformedTiers.find(tier => tier.tier_name.toLowerCase() === 'free');
         setCurrentTier(freeTier || null);
       }
     } catch (error) {
-      console.error('Error fetching subscription tiers:', error);
+      logger.error('Error fetching subscription tiers:', error);
     }
   };
 
@@ -72,22 +85,20 @@ export const useSubscriptionTiers = () => {
 
       if (error) throw error;
 
-      const stats = data?.reduce((acc, item) => {
-        acc[item.usage_type as keyof UsageStats] = (acc[item.usage_type as keyof UsageStats] || 0) + item.usage_count;
+      const stats = (data || []).reduce((acc, item) => {
+        const usageType = item.usage_type as keyof UsageStats;
+        const count = item.usage_count || 0;
+        acc[usageType] = (acc[usageType] || 0) + count;
         return acc;
       }, {
         ai_recommendations: 0,
         photo_uploads: 0,
         outfit_generations: 0
-      } as UsageStats) || {
-        ai_recommendations: 0,
-        photo_uploads: 0,
-        outfit_generations: 0
-      };
+      } as UsageStats);
 
       setUsageStats(stats);
     } catch (error) {
-      console.error('Error fetching usage stats:', error);
+      logger.error('Error fetching usage stats:', error);
     }
   };
 
@@ -99,47 +110,37 @@ export const useSubscriptionTiers = () => {
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
 
-      await supabase.from('usage_tracking').insert({
-        user_id: user.id,
-        usage_type: usageType,
-        usage_count: count,
-        billing_period_start: startOfMonth.toISOString(),
-        billing_period_end: endOfMonth.toISOString()
-      });
+      const { error } = await supabase
+        .from('usage_tracking')
+        .insert({
+          user_id: user.id,
+          usage_type: usageType,
+          usage_count: count,
+          billing_period_start: startOfMonth.toISOString(),
+          billing_period_end: endOfMonth.toISOString()
+        });
 
-      // Update local stats
-      setUsageStats(prev => ({
-        ...prev,
-        [usageType]: prev[usageType] + count
-      }));
+      if (error) throw error;
+      fetchUsageStats();
     } catch (error) {
-      console.error('Error tracking usage:', error);
+      logger.error('Error tracking usage:', error);
     }
   };
 
-  const checkUsageLimit = (usageType: keyof UsageStats): boolean => {
-    if (!currentTier) return false;
-
-    const limit = currentTier.limits[`${usageType}_per_month`];
-    if (limit === -1) return true; // Unlimited
-    
-    return usageStats[usageType] < limit;
-  };
-
-  const getRemainingUsage = (usageType: keyof UsageStats): number | null => {
-    if (!currentTier) return null;
-
-    const limit = currentTier.limits[`${usageType}_per_month`];
-    if (limit === -1) return null; // Unlimited
-    
-    return Math.max(0, limit - usageStats[usageType]);
+  const getRemainingUsage = (usageType: keyof UsageStats) => {
+    if (!currentTier || !currentTier.limits) return 0;
+    const limit = currentTier.limits[`${usageType}_per_month`] || 0;
+    const used = usageStats[usageType] || 0;
+    return Math.max(0, limit - used);
   };
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([fetchTiers(), fetchUsageStats()]).finally(() => {
+    const init = async () => {
+      setLoading(true);
+      await Promise.all([fetchTiers(), fetchUsageStats()]);
       setLoading(false);
-    });
+    };
+    init();
   }, [user, subscriptionStatus]);
 
   return {
@@ -148,8 +149,8 @@ export const useSubscriptionTiers = () => {
     usageStats,
     loading,
     trackUsage,
-    checkUsageLimit,
     getRemainingUsage,
-    refreshData: () => Promise.all([fetchTiers(), fetchUsageStats()])
+    refreshTiers: fetchTiers,
+    refreshUsage: fetchUsageStats
   };
 };

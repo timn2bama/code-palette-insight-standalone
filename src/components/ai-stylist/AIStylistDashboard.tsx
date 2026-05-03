@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -7,17 +7,18 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Sparkles, Calendar, TrendingUp, ShoppingBag, Heart, Star } from 'lucide-react';
 import DailyOutfitSuggestion from './DailyOutfitSuggestion';
+import { logger } from "@/utils/logger";
 
 interface DailyOutfitSuggestion {
   id: string;
   suggestion_date: string;
   outfit_data: any;
-  weather_context: any;
-  occasion: string;
-  style_preference: string;
-  ai_reasoning: string;
-  user_feedback: string;
-  was_worn: boolean;
+  weather_context: any | null;
+  occasion: string | null;
+  style_preference: string | null;
+  ai_reasoning: string | null;
+  user_feedback: string | null;
+  was_worn: boolean | null;
 }
 
 interface EventOutfitRequest {
@@ -25,18 +26,18 @@ interface EventOutfitRequest {
   event_title: string;
   event_date: string;
   event_type: string;
-  dress_code: string;
+  dress_code: string | null;
   status: string;
-  suggested_outfits: any;
+  suggested_outfits: any | null;
 }
 
 interface StyleEvolution {
   id: string;
   tracking_date: string;
   style_metrics: any;
-  mood_tags: string[];
-  confidence_level: number;
-  insights: any;
+  mood_tags: string[] | null;
+  confidence_level: number | null;
+  insights: any | null;
 }
 
 const AIStylistDashboard = () => {
@@ -55,41 +56,43 @@ const AIStylistDashboard = () => {
   }, [user]);
 
   const fetchStylistData = async () => {
+    if (!user) return;
+
     try {
       // Fetch daily outfit suggestions
       const { data: suggestionsData, error: suggestionsError } = await supabase
         .from('daily_outfit_suggestions')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('suggestion_date', { ascending: false })
         .limit(10);
 
       if (suggestionsError) throw suggestionsError;
-      setOutfitSuggestions(suggestionsData || []);
+      setOutfitSuggestions((suggestionsData as DailyOutfitSuggestion[]) || []);
 
       // Fetch event outfit requests
       const { data: eventsData, error: eventsError } = await supabase
         .from('event_outfit_requests')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('event_date', { ascending: false });
 
       if (eventsError) throw eventsError;
-      setEventRequests(eventsData || []);
+      setEventRequests((eventsData as EventOutfitRequest[]) || []);
 
       // Fetch style evolution data
       const { data: evolutionData, error: evolutionError } = await supabase
         .from('style_evolution_tracking')
         .select('*')
-        .eq('user_id', user?.id)
+        .eq('user_id', user.id)
         .order('tracking_date', { ascending: false })
         .limit(30);
 
       if (evolutionError) throw evolutionError;
-      setStyleEvolution(evolutionData || []);
+      setStyleEvolution((evolutionData as StyleEvolution[]) || []);
 
     } catch (error) {
-      console.error('Error fetching stylist data:', error);
+      logger.error('Error fetching stylist data:', error);
       toast({
         title: "Error",
         description: "Failed to load AI stylist data",
@@ -104,7 +107,7 @@ const AIStylistDashboard = () => {
     try {
       setLoading(true);
       
-      const { data, error } = await supabase.functions.invoke('ai-daily-stylist', {
+      const { error } = await supabase.functions.invoke('ai-daily-stylist', {
         body: { user_id: user?.id }
       });
 
@@ -117,7 +120,7 @@ const AIStylistDashboard = () => {
 
       fetchStylistData();
     } catch (error) {
-      console.error('Error generating daily outfit:', error);
+      logger.error('Error generating daily outfit:', error);
       toast({
         title: "Error",
         description: "Failed to generate outfit suggestion",
@@ -130,7 +133,7 @@ const AIStylistDashboard = () => {
 
   const getConfidenceAverage = () => {
     if (styleEvolution.length === 0) return 0;
-    return styleEvolution.reduce((sum, item) => sum + item.confidence_level, 0) / styleEvolution.length;
+    return styleEvolution.reduce((sum, item) => sum + (item.confidence_level || 0), 0) / styleEvolution.length;
   };
 
   const getRecentFeedback = () => {

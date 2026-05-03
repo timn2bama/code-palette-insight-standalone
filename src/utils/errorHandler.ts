@@ -1,5 +1,6 @@
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 /**
  * Error context for categorizing errors
@@ -112,7 +113,7 @@ async function logToMonitoring(details: ErrorDetails): Promise<void> {
     });
   } catch (loggingError) {
     // Don't throw if logging fails - just log to console
-    console.error('Failed to log to monitoring:', loggingError);
+    logger.error('Failed to log to monitoring:', loggingError);
   }
 }
 
@@ -169,9 +170,9 @@ export async function handleError(
 
   // Console log in development
   if (import.meta.env.DEV) {
-    console.error(`[${context.toUpperCase()}]`, error);
+    logger.error(`[${context.toUpperCase()}]`, error);
     if (metadata) {
-      console.error('Metadata:', metadata);
+      logger.error('Metadata:', metadata);
     }
   }
 

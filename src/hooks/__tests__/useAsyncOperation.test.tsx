@@ -1,6 +1,5 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAsyncOperation } from '../useAsyncOperation';
-import { toast } from '@/hooks/use-toast';
 
 jest.mock('@/hooks/use-toast', () => ({
   toast: jest.fn(),

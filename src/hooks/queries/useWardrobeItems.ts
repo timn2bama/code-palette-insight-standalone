@@ -66,7 +66,7 @@ export const useCreateWardrobeItem = () => {
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       // Invalidate and refetch wardrobe items
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items-by-category'] });

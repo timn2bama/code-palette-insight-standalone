@@ -14,11 +14,17 @@ import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Shirt, Plus, Trash2 } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Tables } from "@/integrations/supabase/types";
+import { logger } from "@/utils/logger";
 
+interface WardrobeItem extends Tables<'wardrobe_items'> {
+  wearCount: number;
+  lastWorn: string;
+}
 
 const Wardrobe = () => {
   const [selectedCategory, setSelectedCategory] = useState("all");
-  const [clothingItems, setClothingItems] = useState([]);
+  const [clothingItems, setClothingItems] = useState<WardrobeItem[]>([]);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
@@ -38,7 +44,7 @@ const Wardrobe = () => {
       if (error) throw error;
 
       // Transform data to match expected format
-      const transformedItems = data.map(item => ({
+      const transformedItems: WardrobeItem[] = (data || []).map(item => ({
         ...item,
         wearCount: item.wear_count || 0,
         lastWorn: item.last_worn ? formatDate(item.last_worn) : 'Never'
@@ -46,7 +52,7 @@ const Wardrobe = () => {
 
       setClothingItems(transformedItems);
     } catch (error) {
-      console.error('Error fetching wardrobe items:', error);
+      logger.error('Error fetching wardrobe items:', error);
       toast.error('Failed to load wardrobe items');
     } finally {
       setLoading(false);
@@ -68,10 +74,11 @@ const Wardrobe = () => {
 
   const markAsWorn = async (itemId: string, itemName: string) => {
     try {
+      const currentItem = clothingItems.find(item => item.id === itemId);
       const { error } = await supabase
         .from('wardrobe_items')
         .update({ 
-          wear_count: clothingItems.find(item => item.id === itemId)?.wearCount + 1 || 1,
+          wear_count: (currentItem?.wearCount || 0) + 1,
           last_worn: new Date().toISOString()
         })
         .eq('id', itemId);
@@ -81,7 +88,7 @@ const Wardrobe = () => {
       toast.success(`Marked "${itemName}" as worn today!`);
       fetchWardrobeItems(); // Refresh the data
     } catch (error) {
-      console.error('Error marking item as worn:', error);
+      logger.error('Error marking item as worn:', error);
       toast.error('Failed to mark item as worn');
     }
   };
@@ -93,7 +100,7 @@ const Wardrobe = () => {
       toast.success('Wardrobe reset successfully');
       fetchWardrobeItems();
     } catch (error) {
-      console.error('Error resetting wardrobe:', error);
+      logger.error('Error resetting wardrobe:', error);
       toast.error('Failed to reset wardrobe');
     }
   };
@@ -313,7 +320,7 @@ const Wardrobe = () => {
               variant="outline" 
               onClick={async () => {
                 try {
-                  const { data, error } = await supabase.functions.invoke('populate-sample-wardrobe');
+                  const { error } = await supabase.functions.invoke('populate-sample-wardrobe');
                   if (error) throw error;
                   toast.success('Sample wardrobe populated successfully!');
                   fetchWardrobeItems();

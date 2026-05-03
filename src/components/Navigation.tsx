@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
-import { Home, ArrowLeft, ChevronDown } from "lucide-react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/contexts/AuthContext";
 import { SecurityStatus } from "@/components/SecurityStatus";
@@ -18,14 +18,6 @@ const Navigation = () => {
     await signOut();
     navigate('/');
   };
-
-  const handleBackToHome = () => {
-    navigate('/');
-  };
-
-  // Pages that should show back to home button
-  const featurePages = ["/wardrobe", "/outfits", "/weather", "/services", "/subscription"];
-  const showBackButton = featurePages.includes(location.pathname);
 
   const coreNavigationItems = [
     { name: "Home", path: "/", icon: "🏠" },

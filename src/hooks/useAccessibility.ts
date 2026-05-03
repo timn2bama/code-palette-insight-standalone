@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Preferences } from '@capacitor/preferences';
+import { logger } from "@/utils/logger";
 
 interface AccessibilitySettings {
   highContrast: boolean;
@@ -36,7 +37,7 @@ export const useAccessibility = () => {
         setSettings(JSON.parse(value));
       }
     } catch (error) {
-      console.error('Failed to load accessibility settings:', error);
+      logger.error('Failed to load accessibility settings:', error);
     }
   };
 
@@ -48,7 +49,7 @@ export const useAccessibility = () => {
       });
       setSettings(newSettings);
     } catch (error) {
-      console.error('Failed to save accessibility settings:', error);
+      logger.error('Failed to save accessibility settings:', error);
     }
   };
 
@@ -115,7 +116,7 @@ export const useAccessibility = () => {
   // Voice control functionality
   const startVoiceControl = useCallback(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-      console.error('Speech recognition not supported');
+      logger.error('Speech recognition not supported');
       return;
     }
 
@@ -134,7 +135,7 @@ export const useAccessibility = () => {
       setIsListening(false);
     };
 
-    recognition.onresult = (event) => {
+    recognition.onresult = (event: any) => {
       const command = event.results[event.results.length - 1][0].transcript.toLowerCase().trim();
       handleVoiceCommand(command);
     };

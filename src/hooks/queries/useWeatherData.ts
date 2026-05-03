@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { logger } from "@/utils/logger";
 
 interface CurrentWeather {
   temperature: number;
@@ -63,7 +64,7 @@ export const useWeatherData = () => {
           });
           
           if (error) {
-            console.error('Weather API error:', error);
+            logger.error('Weather API error:', error);
             toast({
               title: "Weather Error",
               description: "Failed to fetch weather data.",
@@ -81,7 +82,7 @@ export const useWeatherData = () => {
           }
           
         } catch (error) {
-          console.error('Error fetching weather:', error);
+          logger.error('Error fetching weather:', error);
           toast({
             title: "Weather Error",
             description: "Failed to get weather information.",
@@ -156,7 +157,7 @@ export const useWeatherData = () => {
             });
             
             if (error) {
-              console.error('Weather API error:', error);
+              logger.error('Weather API error:', error);
               toast({
                 title: "Weather Error",
                 description: "Failed to fetch weather data.",
@@ -183,7 +184,7 @@ export const useWeatherData = () => {
             }
             
           } catch (error) {
-            console.error('Error fetching weather:', error);
+            logger.error('Error fetching weather:', error);
             toast({
               title: "Weather Error",
               description: "Failed to get weather information.",

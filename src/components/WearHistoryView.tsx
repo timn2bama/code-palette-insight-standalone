@@ -84,7 +84,7 @@ export function WearHistoryView() {
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Items Worn:</p>
                     <div className="grid grid-cols-2 gap-2">
-                      {log.items_worn.map((item: any, idx: number) => (
+                      {log.items_worn && Array.isArray(log.items_worn) && log.items_worn.map((item: any, idx: number) => (
                         <div key={idx} className="text-sm bg-muted p-2 rounded">
                           {item.name}
                         </div>

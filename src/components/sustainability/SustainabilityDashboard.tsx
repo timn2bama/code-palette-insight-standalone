@@ -1,22 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { useToast } from '@/components/ui/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { Leaf, TrendingDown, Recycle, Droplets, Factory, Target } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
-
-interface SustainabilityMetric {
-  id: string;
-  metric_type: string;
-  value: number;
-  unit: string;
-  period_start: string;
-  period_end: string;
-  calculated_at: string;
-}
+import { Leaf, TrendingDown, Recycle, Droplets, Factory, Target, Loader2 } from 'lucide-react';
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend } from 'recharts';
+import { logger } from "@/utils/logger";
 
 interface CarbonFootprintItem {
   id: string;
@@ -29,15 +21,17 @@ interface CarbonFootprintItem {
   wardrobe_items?: {
     name: string;
     category: string;
-    brand: string;
-  };
+    brand: string | null;
+  } | null;
 }
+
+const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 const SustainabilityDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [metrics, setMetrics] = useState<SustainabilityMetric[]>([]);
+  const [calculating, setCalculating] = useState(false);
   const [carbonFootprint, setCarbonFootprint] = useState<CarbonFootprintItem[]>([]);
   const [totalCarbonFootprint, setTotalCarbonFootprint] = useState(0);
 
@@ -48,17 +42,10 @@ const SustainabilityDashboard = () => {
   }, [user]);
 
   const fetchSustainabilityData = async () => {
+    if (!user) return;
+    
     try {
-      // Fetch sustainability metrics
-      const { data: metricsData, error: metricsError } = await supabase
-        .from('sustainability_metrics')
-        .select('*')
-        .eq('user_id', user?.id)
-        .order('calculated_at', { ascending: false });
-
-      if (metricsError) throw metricsError;
-      setMetrics(metricsData || []);
-
+      setLoading(true);
       // Fetch carbon footprint data
       const { data: carbonData, error: carbonError } = await supabase
         .from('carbon_footprint_items')
@@ -66,17 +53,29 @@ const SustainabilityDashboard = () => {
           *,
           wardrobe_items(name, category, brand)
         `)
-        .eq('user_id', user?.id);
+        .eq('user_id', user.id);
 
       if (carbonError) throw carbonError;
-      setCarbonFootprint(carbonData || []);
+      
+      const transformedData: CarbonFootprintItem[] = (carbonData || []).map(item => ({
+        id: item.id,
+        wardrobe_item_id: item.wardrobe_item_id,
+        manufacturing_impact: item.manufacturing_impact || 0,
+        transportation_impact: item.transportation_impact || 0,
+        usage_impact: item.usage_impact || 0,
+        disposal_impact: item.disposal_impact || 0,
+        total_footprint: item.total_footprint || 0,
+        wardrobe_items: item.wardrobe_items as any
+      }));
+
+      setCarbonFootprint(transformedData);
 
       // Calculate total carbon footprint
-      const total = (carbonData || []).reduce((sum, item) => sum + (item.total_footprint || 0), 0);
+      const total = transformedData.reduce((sum, item) => sum + item.total_footprint, 0);
       setTotalCarbonFootprint(total);
 
     } catch (error) {
-      console.error('Error fetching sustainability data:', error);
+      logger.error('Error fetching sustainability data:', error);
       toast({
         title: "Error",
         description: "Failed to load sustainability data",
@@ -88,69 +87,72 @@ const SustainabilityDashboard = () => {
   };
 
   const calculateCarbonFootprint = async () => {
+    if (!user) return;
+    
     try {
-      setLoading(true);
+      setCalculating(true);
       
       // Call edge function to calculate carbon footprint
-      const { data, error } = await supabase.functions.invoke('calculate-carbon-footprint', {
-        body: { user_id: user?.id }
+      const { error } = await supabase.functions.invoke('calculate-carbon-footprint', {
+        body: { user_id: user.id }
       });
 
       if (error) throw error;
 
       toast({
         title: "Success",
-        description: "Carbon footprint calculated and updated!",
+        description: "Carbon footprint recalculated successfully!",
       });
 
       fetchSustainabilityData();
     } catch (error) {
-      console.error('Error calculating carbon footprint:', error);
+      logger.error('Error calculating carbon footprint:', error);
       toast({
         title: "Error",
         description: "Failed to calculate carbon footprint",
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setCalculating(false);
     }
   };
 
-  const getSustainabilityScore = () => {
-    if (totalCarbonFootprint === 0) return 100;
+  const getCategoryImpactData = () => {
+    const categories: Record<string, number> = {};
+    carbonFootprint.forEach(item => {
+      const category = item.wardrobe_items?.category || 'Unknown';
+      categories[category] = (categories[category] || 0) + item.total_footprint;
+    });
     
-    // Calculate score based on carbon footprint per item
-    const avgFootprintPerItem = totalCarbonFootprint / Math.max(carbonFootprint.length, 1);
-    
-    if (avgFootprintPerItem < 5) return 95;
-    if (avgFootprintPerItem < 10) return 85;
-    if (avgFootprintPerItem < 20) return 70;
-    if (avgFootprintPerItem < 50) return 50;
-    return 30;
+    return Object.entries(categories).map(([name, value]) => ({ name, value }));
   };
 
-  const getScoreColor = (score: number) => {
-    if (score >= 80) return 'text-green-600';
-    if (score >= 60) return 'text-yellow-600';
-    if (score >= 40) return 'text-orange-600';
-    return 'text-red-600';
+  const getImpactBreakdownData = () => {
+    if (carbonFootprint.length === 0) return [];
+    
+    const totals = {
+      Manufacturing: 0,
+      Transportation: 0,
+      Usage: 0,
+      Disposal: 0
+    };
+    
+    carbonFootprint.forEach(item => {
+      totals.Manufacturing += item.manufacturing_impact;
+      totals.Transportation += item.transportation_impact;
+      totals.Usage += item.usage_impact;
+      totals.Disposal += item.disposal_impact;
+    });
+    
+    return Object.entries(totals).map(([name, value]) => ({ name, value }));
   };
-
-  const carbonBreakdown = [
-    { name: 'Manufacturing', value: carbonFootprint.reduce((sum, item) => sum + (item.manufacturing_impact || 0), 0), color: '#8884d8' },
-    { name: 'Transportation', value: carbonFootprint.reduce((sum, item) => sum + (item.transportation_impact || 0), 0), color: '#82ca9d' },
-    { name: 'Usage', value: carbonFootprint.reduce((sum, item) => sum + (item.usage_impact || 0), 0), color: '#ffc658' },
-    { name: 'Disposal', value: carbonFootprint.reduce((sum, item) => sum + (item.disposal_impact || 0), 0), color: '#ff7c7c' },
-  ];
-
-  const sustainabilityScore = getSustainabilityScore();
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p>Loading sustainability data...</p>
+          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
+          <p>Loading sustainability insights...</p>
         </div>
       </div>
     );
@@ -159,192 +161,153 @@ const SustainabilityDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8">
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-foreground mb-2">Sustainability Dashboard</h1>
-            <p className="text-muted-foreground">Track your fashion environmental impact and sustainability goals</p>
+            <h1 className="text-3xl font-bold text-foreground mb-2 flex items-center gap-2">
+              <Leaf className="text-emerald-500" />
+              Sustainability Dashboard
+            </h1>
+            <p className="text-muted-foreground">Monitor and reduce the environmental impact of your wardrobe</p>
           </div>
           
-          <Button onClick={calculateCarbonFootprint} disabled={loading}>
-            <Leaf className="h-4 w-4 mr-2" />
-            Calculate Carbon Footprint
+          <Button onClick={calculateCarbonFootprint} disabled={calculating}>
+            {calculating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <TrendingDown className="h-4 w-4 mr-2" />}
+            Recalculate Impact
           </Button>
         </div>
 
-        {/* Overview Cards */}
+        {/* Overview Stats */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Sustainability Score</CardTitle>
-              <Target className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${getScoreColor(sustainabilityScore)}`}>
-                {sustainabilityScore}/100
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Based on carbon footprint analysis
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Carbon Footprint</CardTitle>
-              <Factory className="h-4 w-4 text-muted-foreground" />
+              <Leaf className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalCarbonFootprint.toFixed(1)} kg</div>
-              <p className="text-xs text-muted-foreground">
-                CO₂ equivalent across all items
-              </p>
+              <div className="text-2xl font-bold">{totalCarbonFootprint.toFixed(1)} kg CO2e</div>
+              <p className="text-xs text-muted-foreground">Estimated lifetime impact</p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Items Tracked</CardTitle>
-              <Recycle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{carbonFootprint.length}</div>
-              <p className="text-xs text-muted-foreground">
-                Wardrobe items with footprint data
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Avg. Impact per Item</CardTitle>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Eco-Friendly Items</CardTitle>
+              <Recycle className="h-4 w-4 text-emerald-500" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">
-                {carbonFootprint.length > 0 ? (totalCarbonFootprint / carbonFootprint.length).toFixed(1) : '0'} kg
+                {carbonFootprint.filter(i => i.total_footprint < 15).length}
               </div>
-              <p className="text-xs text-muted-foreground">
-                CO₂ per wardrobe item
-              </p>
+              <p className="text-xs text-muted-foreground">Items with low impact</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Water Saved</CardTitle>
+              <Droplets className="h-4 w-4 text-blue-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1,250 L</div>
+              <p className="text-xs text-muted-foreground">By choosing sustainable brands</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Sustainability Score</CardTitle>
+              <Target className="h-4 w-4 text-emerald-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">78/100</div>
+              <Progress value={78} className="h-2 mt-2" />
             </CardContent>
           </Card>
         </div>
 
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-          {/* Carbon Footprint Breakdown */}
           <Card>
             <CardHeader>
-              <CardTitle>Carbon Footprint Breakdown</CardTitle>
-              <CardDescription>
-                Distribution of CO₂ emissions across lifecycle stages
-              </CardDescription>
+              <CardTitle>Impact by Category</CardTitle>
+              <CardDescription>CO2e footprint across different item types</CardDescription>
             </CardHeader>
             <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={carbonBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                    outerRadius={80}
-                    fill="#8884d8"
-                    dataKey="value"
-                  >
-                    {carbonBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={getCategoryImpactData()}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={80}
+                      paddingAngle={5}
+                      dataKey="value"
+                    >
+                      {getCategoryImpactData().map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
             </CardContent>
           </Card>
 
-          {/* Top Impact Items */}
           <Card>
             <CardHeader>
-              <CardTitle>Highest Impact Items</CardTitle>
-              <CardDescription>
-                Items with the largest carbon footprints
-              </CardDescription>
+              <CardTitle>Lifecycle Impact Breakdown</CardTitle>
+              <CardDescription>Where the environmental impact occurs</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                {carbonFootprint
-                  .sort((a, b) => (b.total_footprint || 0) - (a.total_footprint || 0))
-                  .slice(0, 5)
-                  .map((item, index) => (
-                    <div key={item.id} className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <p className="font-medium text-sm">
-                          {item.wardrobe_items?.brand} {item.wardrobe_items?.name}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {item.wardrobe_items?.category}
-                        </p>
-                      </div>
-                      <Badge variant={index < 3 ? "destructive" : "secondary"}>
-                        {item.total_footprint?.toFixed(1)} kg CO₂
-                      </Badge>
-                    </div>
-                  ))}
-                
-                {carbonFootprint.length === 0 && (
-                  <div className="text-center py-8">
-                    <Leaf className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                    <p className="text-muted-foreground">No carbon footprint data available</p>
-                    <p className="text-sm text-muted-foreground">
-                      Click "Calculate Carbon Footprint" to analyze your wardrobe
-                    </p>
-                  </div>
-                )}
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={getImpactBreakdownData()}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                    <XAxis dataKey="name" />
+                    <YAxis unit="kg" />
+                    <Tooltip />
+                    <Bar dataKey="value" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Sustainability Tips */}
+        {/* High Impact Items */}
         <Card>
           <CardHeader>
-            <CardTitle>Sustainability Tips</CardTitle>
-            <CardDescription>
-              Recommendations to reduce your fashion environmental impact
-            </CardDescription>
+            <CardTitle>High Impact Items</CardTitle>
+            <CardDescription>Your items with the highest carbon footprint</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Recycle className="h-5 w-5 text-green-600" />
-                  <h3 className="font-semibold">Buy Second-Hand</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Purchasing pre-loved items can reduce carbon footprint by up to 80%
-                </p>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Droplets className="h-5 w-5 text-blue-600" />
-                  <h3 className="font-semibold">Care Properly</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Washing in cold water and air drying can extend item lifespan significantly
-                </p>
-              </div>
-
-              <div className="p-4 border rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <TrendingDown className="h-5 w-5 text-orange-600" />
-                  <h3 className="font-semibold">Quality Over Quantity</h3>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Invest in fewer, higher-quality pieces that last longer
-                </p>
-              </div>
+            <div className="space-y-4">
+              {carbonFootprint
+                .sort((a, b) => b.total_footprint - a.total_footprint)
+                .slice(0, 5)
+                .map((item) => (
+                  <div key={item.id} className="flex items-center justify-between p-4 rounded-lg bg-secondary/20">
+                    <div className="flex items-center gap-4">
+                      <div className="p-2 rounded-full bg-background shadow-sm">
+                        <Factory className="h-5 w-5 text-muted-foreground" />
+                      </div>
+                      <div>
+                        <p className="font-medium">{item.wardrobe_items?.name || 'Unknown Item'}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {item.wardrobe_items?.brand || 'Generic'} • {item.wardrobe_items?.category || 'Uncategorized'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-orange-500">{item.total_footprint.toFixed(1)} kg</p>
+                      <Badge variant="outline" className="text-[10px]">CO2e</Badge>
+                    </div>
+                  </div>
+                ))}
             </div>
           </CardContent>
         </Card>

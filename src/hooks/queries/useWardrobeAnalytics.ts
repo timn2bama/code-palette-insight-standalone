@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from "@/utils/logger";
 
 interface WardrobeAnalytics {
   totalItems: number;
@@ -61,30 +62,33 @@ export const useWardrobeAnalytics = () => {
 
       // Calculate analytics
       const totalItems = items?.length || 0;
-      const totalValue = items?.reduce((sum, item) => sum + (parseFloat('0')), 0) || 0;
+      const totalValue = items?.reduce((sum) => sum + (parseFloat('0')), 0) || 0;
       
-      const itemsWithCostPerWear = items?.map(item => ({
-        ...item,
-        cost_per_wear: item.wear_count > 0 ? (parseFloat('0') / item.wear_count) : 0
-      })) || [];
+      const itemsWithCostPerWear = items?.map(item => {
+        const wearCount = item.wear_count || 0;
+        return {
+          ...item,
+          cost_per_wear: wearCount > 0 ? (parseFloat('0') / wearCount) : 0
+        };
+      }) || [];
 
       const averageCostPerWear = itemsWithCostPerWear.length > 0
         ? itemsWithCostPerWear.reduce((sum, item) => sum + item.cost_per_wear, 0) / itemsWithCostPerWear.length
         : 0;
 
       // Most and least worn items
-      const sortedByWear = [...itemsWithCostPerWear].sort((a, b) => b.wear_count - a.wear_count);
+      const sortedByWear = [...itemsWithCostPerWear].sort((a, b) => (b.wear_count || 0) - (a.wear_count || 0));
       const mostWornItems = sortedByWear.slice(0, 5).map(item => ({
         id: item.id,
         name: item.name,
-        wear_count: item.wear_count,
+        wear_count: item.wear_count || 0,
         cost_per_wear: item.cost_per_wear
       }));
       
       const leastWornItems = sortedByWear.slice(-5).reverse().map(item => ({
         id: item.id,
         name: item.name,
-        wear_count: item.wear_count,
+        wear_count: item.wear_count || 0,
         cost_per_wear: item.cost_per_wear
       }));
 
@@ -98,10 +102,10 @@ export const useWardrobeAnalytics = () => {
         return acc;
       }, {} as Record<string, { count: number; value: number }>) || {};
 
-      const categoryBreakdown = Object.entries(categoryMap).map(([category, data]) => ({
+      const categoryBreakdown = Object.entries(categoryMap).map(([category, stats]) => ({
         category,
-        count: data.count,
-        value: data.value
+        count: stats.count,
+        value: stats.value
       }));
 
       // Fetch seasonal analytics
@@ -111,11 +115,11 @@ export const useWardrobeAnalytics = () => {
         .eq('user_id', user.id)
         .eq('year', new Date().getFullYear());
 
-      const seasonalUsage = seasonalData?.map(season => ({
+      const seasonalUsage = (seasonalData || []).map(season => ({
         season: season.season,
-        usage_count: season.usage_count,
+        usage_count: season.usage_count || 0,
         top_categories: Array.isArray(season.top_items) ? season.top_items as string[] : []
-      })) || [];
+      }));
 
       setAnalytics({
         totalItems,
@@ -135,10 +139,17 @@ export const useWardrobeAnalytics = () => {
         .eq('is_active', true)
         .order('priority', { ascending: false });
 
-      setRecommendations(recData || []);
+      setRecommendations((recData || []).map(item => ({
+        id: item.id,
+        category: item.category,
+        priority: item.priority || 0,
+        reason: item.reason || '',
+        suggested_items: item.suggested_items,
+        external_links: item.external_links
+      })));
 
     } catch (error) {
-      console.error('Error fetching analytics:', error);
+      logger.error('Error fetching analytics:', error);
     } finally {
       setLoading(false);
     }
@@ -178,7 +189,7 @@ export const useWardrobeAnalytics = () => {
 
       fetchAnalytics(); // Refresh data
     } catch (error) {
-      console.error('Error generating recommendations:', error);
+      logger.error('Error generating recommendations:', error);
     }
   };
 

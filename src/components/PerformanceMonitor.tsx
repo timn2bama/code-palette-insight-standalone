@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { usePerformanceMonitoring } from '@/hooks/usePerformanceMonitoring';
 import { useRealUserMonitoring } from '@/hooks/useRealUserMonitoring';
 import { Activity, Zap, Clock, Eye } from 'lucide-react';
 
@@ -17,7 +16,6 @@ interface PerformanceMetrics {
 export function PerformanceMonitor() {
   const [metrics, setMetrics] = useState<Partial<PerformanceMetrics>>({});
   const [isVisible, setIsVisible] = useState(false);
-  const { trackCustomMetric } = usePerformanceMonitoring();
   const { trackPageView } = useRealUserMonitoring();
 
   useEffect(() => {

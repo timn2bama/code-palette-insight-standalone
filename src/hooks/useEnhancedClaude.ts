@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { logger } from "@/utils/logger";
 
 interface ClaudeCapabilities {
   visualAnalysis: boolean;
@@ -60,7 +61,7 @@ export const useEnhancedClaude = () => {
 
       return data as AnalysisResponse;
     } catch (error) {
-      console.error('Enhanced Claude analysis error:', error);
+      logger.error('Enhanced Claude analysis error:', error);
       toast({
         title: 'Analysis failed',
         description: 'Failed to analyze content. Please try again.',

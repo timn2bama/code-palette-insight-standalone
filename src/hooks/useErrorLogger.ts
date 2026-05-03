@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { logger } from "@/utils/logger";
 
 interface ErrorLogEntry {
   message: string;
@@ -34,7 +35,7 @@ export const useErrorLogger = () => {
 
     // Log to console in development
     if (import.meta.env.DEV) {
-      console.error('Error logged:', errorEntry);
+      logger.error('Error logged:', errorEntry);
       return;
     }
 
@@ -44,7 +45,7 @@ export const useErrorLogger = () => {
         body: { error: errorEntry }
       });
     } catch (logError) {
-      console.error('Failed to log error:', logError);
+      logger.error('Failed to log error:', logError);
     }
   };
 

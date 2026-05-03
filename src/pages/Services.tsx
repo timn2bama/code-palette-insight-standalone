@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import Navigation from "@/components/Navigation";
 import { useLocalServices } from "@/hooks/useLocalServices";
 import { useSavedServices } from "@/hooks/useSavedServices";
+import { logger } from "@/utils/logger";
 
 const Services = () => {
   const [searchLocation, setSearchLocation] = useState("San Francisco, CA");
@@ -32,7 +33,7 @@ const Services = () => {
     const [lat, lng] = location.split(',').map(coord => parseFloat(coord.trim()));
     
     try {
-      console.log(`🌍 Geocoding coordinates: ${lat}, ${lng}`);
+      logger.info(`🌍 Geocoding coordinates: ${lat}, ${lng}`);
       
       // Try BigDataCloud first (more reliable and no CORS issues)
       const bdcResponse = await fetch(
@@ -41,7 +42,7 @@ const Services = () => {
       
       if (bdcResponse.ok) {
         const bdcData = await bdcResponse.json();
-        console.log('🌍 BigDataCloud response:', bdcData);
+        logger.info('🌍 BigDataCloud response:', bdcData);
         
         const city = bdcData.city || bdcData.locality;
         const state = bdcData.principalSubdivision;
@@ -49,40 +50,40 @@ const Services = () => {
         
         if (city && state && country === 'United States') {
           const result = `${city}, ${state}`;
-          console.log(`✅ Geocoded to: ${result}`);
+          logger.info(`✅ Geocoded to: ${result}`);
           return result;
         } else if (city && state) {
           const result = `${city}, ${state}`;
-          console.log(`✅ Geocoded to: ${result}`);
+          logger.info(`✅ Geocoded to: ${result}`);
           return result;
         } else if (city) {
-          console.log(`✅ Geocoded to: ${city}`);
+          logger.info(`✅ Geocoded to: ${city}`);
           return city;
         }
       }
       
       // Fallback: Try a simpler approach with ipapi.co (works well for general location)
       try {
-        console.log('🌍 Trying alternative geocoding...');
+        logger.info('🌍 Trying alternative geocoding...');
         const response = await fetch(`https://ipapi.co/json/`);
         if (response.ok) {
           const data = await response.json();
           if (data.city && data.region) {
             const result = `${data.city}, ${data.region}`;
-            console.log(`✅ Fallback geocoded to: ${result}`);
+            logger.info(`✅ Fallback geocoded to: ${result}`);
             return result;
           }
         }
       } catch (fallbackError) {
-        console.log('⚠️ Fallback geocoding failed:', fallbackError);
+        logger.info('⚠️ Fallback geocoding failed:', fallbackError);
       }
       
     } catch (error) {
-      console.error('❌ Geocoding failed:', error);
+      logger.error('❌ Geocoding failed:', error);
     }
     
     // Return formatted coordinates as final fallback
-    console.log(`⚠️ Using coordinates as fallback: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
+    logger.info(`⚠️ Using coordinates as fallback: ${lat.toFixed(4)}, ${lng.toFixed(4)}`);
     return `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
   };
   
@@ -94,7 +95,7 @@ const Services = () => {
   useEffect(() => {
     const autoGeocodeLocation = async () => {
       if (isCoordinateString(currentLocation)) {
-        console.log('Auto-geocoding coordinates on load:', currentLocation);
+        logger.info('Auto-geocoding coordinates on load:', currentLocation);
         const geocodedLocation = await geocodeCoordinates(currentLocation);
         if (geocodedLocation !== currentLocation) {
           setCurrentLocation(geocodedLocation);
@@ -115,11 +116,11 @@ const Services = () => {
   };
 
   const getCurrentLocation = () => {
-    console.log('📍 getCurrentLocation called');
+    logger.info('📍 getCurrentLocation called');
     setLocationLoading(true);
     
     if (!navigator.geolocation) {
-      console.error('❌ Geolocation not supported');
+      logger.error('❌ Geolocation not supported');
       toast({
         title: "Error",
         description: "Geolocation is not supported by this browser.",
@@ -129,16 +130,16 @@ const Services = () => {
       return;
     }
 
-    console.log('🔍 Requesting current position...');
+    logger.info('🔍 Requesting current position...');
     navigator.geolocation.getCurrentPosition(
       async (position) => {
         const { latitude, longitude } = position.coords;
-        console.log(`✅ Got coordinates: ${latitude}, ${longitude}`);
+        logger.info(`✅ Got coordinates: ${latitude}, ${longitude}`);
         
         try {
           // Use the same geocoding function we created earlier
           const locationName = await geocodeCoordinates(`${latitude}, ${longitude}`);
-          console.log('📍 Geocoded location:', locationName);
+          logger.info('📍 Geocoded location:', locationName);
           
           setSearchLocation(locationName);
           setCurrentLocation(locationName);
@@ -149,7 +150,7 @@ const Services = () => {
           });
           
         } catch (error) {
-          console.error('❌ Geocoding failed:', error);
+          logger.error('❌ Geocoding failed:', error);
           // Fallback to coordinates with better formatting
           const coordsLocation = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
           setSearchLocation(coordsLocation);
@@ -164,24 +165,24 @@ const Services = () => {
         setLocationLoading(false);
       },
       (error) => {
-        console.error('❌ Geolocation error:', error);
+        logger.error('❌ Geolocation error:', error);
         let errorMessage = "Unable to retrieve your location.";
         
         switch (error.code) {
           case error.PERMISSION_DENIED:
             errorMessage = "Location access denied. Please enable location permissions in your browser.";
-            console.error('Permission denied for location access');
+            logger.error('Permission denied for location access');
             break;
           case error.POSITION_UNAVAILABLE:
             errorMessage = "Location information is unavailable.";
-            console.error('Position unavailable');
+            logger.error('Position unavailable');
             break;
           case error.TIMEOUT:
             errorMessage = "Location request timed out. Please try again.";
-            console.error('Location request timeout');
+            logger.error('Location request timeout');
             break;
           default:
-            console.error('Unknown geolocation error:', error.message);
+            logger.error('Unknown geolocation error:', error.message);
         }
         
         toast({
@@ -201,20 +202,20 @@ const Services = () => {
   };
 
   const openDirections = (service: any) => {
-    console.log('🗺️ Opening directions for:', service);
+    logger.info('🗺️ Opening directions for:', service);
     const address = service.address || service.name;
     const encodedAddress = encodeURIComponent(address);
     
     // Create maps URL that works on all platforms
     const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodedAddress}`;
-    console.log('🗺️ Maps URL:', mapsUrl);
+    logger.info('🗺️ Maps URL:', mapsUrl);
     
     // Try to open in new tab/window
     const result = window.open(mapsUrl, '_blank');
     
     // If popup blocked, offer alternative
     if (!result || result.closed || typeof result.closed === 'undefined') {
-      console.warn('⚠️ Popup blocked, offering alternatives');
+      logger.warn('⚠️ Popup blocked, offering alternatives');
       
       // Try to copy URL to clipboard as fallback
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -243,12 +244,6 @@ const Services = () => {
       default: return "text-muted-foreground";
     }
   };
-
-  const servicesCount = data?.stats?.total || 0;
-  const avgRating = data?.stats?.avgRating?.toFixed(1) || "0.0";
-  const openCount = data?.stats?.openCount || 0;
-  const allServices = data ? Object.values(data.servicesByCategory).flat() : [];
-  const closestDistance = allServices.length > 0 ? allServices[0].distance : "N/A";
 
   return (
     <div className="min-h-screen bg-gradient-subtle">

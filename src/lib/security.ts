@@ -52,7 +52,7 @@ export function sanitizeInput(input: string): string {
   
   return input
     .trim()
-    .replace(/[<>\"']/g, '') // Remove potentially dangerous characters
+    .replace(/[<>"']/g, '') // Remove potentially dangerous characters
     .substring(0, 500); // Limit length
 }
 

@@ -2,16 +2,20 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { compressImage } from '../utils/imageCompression';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Upload, Image, AlertCircle, Crown } from "lucide-react";
+import { 
+  Upload, 
+  Image, 
+  Crown 
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { validateTextInput, validateImageFile, getSafeErrorMessage, rateLimiter } from "@/lib/security";
 import { useAuditLog } from "@/hooks/useAuditLog";
 import { useUploadLimits } from "@/hooks/useUploadLimits";
+import { logger } from "@/utils/logger";
 
 interface AddWardrobeItemDialogProps {
   onItemAdded: () => void;
@@ -45,7 +49,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
       const img = new window.Image();
       
       img.onload = () => {
-        console.log('Original image dimensions:', img.width, 'x', img.height);
+        logger.info('Original image dimensions:', img.width, 'x', img.height);
         
         // Optimize for quality and size balance - max 1280px long edge
         const maxSize = 1280;
@@ -62,7 +66,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
           }
         }
         
-        console.log('Compressed image dimensions:', width, 'x', height);
+        logger.info('Compressed image dimensions:', width, 'x', height);
         
         canvas.width = width;
         canvas.height = height;
@@ -100,7 +104,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
           }
           
           if (chosenBlob) {
-            console.log(`Using ${chosenType}, size: ${chosenBlob.size} bytes`);
+            logger.info(`Using ${chosenType}, size: ${chosenBlob.size} bytes`);
             
             // Update filename extension
             const nameWithoutExt = file.name.replace(/\.[^/.]+$/, '');
@@ -124,11 +128,11 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    console.log('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
+    logger.info('File selected:', file.name, 'Size:', file.size, 'Type:', file.type);
 
     // Check file type first
     if (!['image/jpeg', 'image/jpg', 'image/png', 'image/webp'].includes(file.type)) {
-      console.error('Invalid file type:', file.type);
+      logger.error('Invalid file type:', file.type);
       toast({
         title: "Invalid file type",
         description: "Only JPEG, PNG, and WebP images are allowed",
@@ -141,19 +145,19 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
     
     // Always compress images from phone cameras (typically > 2MB) or large images
   if (file.size > 2_000_000) {
-      console.log('File size exceeds 2MB, compressing...', file.size, 'bytes');
+      logger.info('File size exceeds 2MB, compressing...', file.size, 'bytes');
       toast({
         title: "Compressing image...",
         description: "Optimizing image for upload",
       });
       processedFile = await compressImage(file);
-      console.log('Compressed file size:', processedFile.size, 'bytes');
+      logger.info('Compressed file size:', processedFile.size, 'bytes');
     }
 
     // Final validation on compressed file
     const fileValidation = validateImageFile(processedFile);
     if (!fileValidation.isValid) {
-      console.error('File validation failed:', fileValidation.error);
+      logger.error('File validation failed:', fileValidation.error);
       toast({
         title: "Invalid file",
         description: fileValidation.error,
@@ -162,13 +166,13 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
       return;
     }
 
-    console.log('File passed validation, setting as selected file');
+    logger.info('File passed validation, setting as selected file');
 
     setSelectedFile(processedFile);
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result as string;
-      console.log('Preview URL created, length:', result?.length);
+      logger.info('Preview URL created, length:', result?.length);
       setPreviewUrl(result);
     };
     reader.readAsDataURL(processedFile);
@@ -192,7 +196,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
 
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
-        console.error('No authenticated user found');
+        logger.error('No authenticated user found');
         toast({
           title: "Authentication required",
           description: "Please log in to add items to your wardrobe.",
@@ -201,7 +205,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
         return;
       }
 
-      console.log('User authenticated:', user.id);
+      logger.info('User authenticated:', user.id);
 
       // Check upload limits for selected category
       if (!canUploadToCategory(formData.category)) {
@@ -250,33 +254,33 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
 
       // Upload photo if file is selected
       if (selectedFile) {
-        console.log('Starting photo upload...', selectedFile.name, selectedFile.size);
+        logger.info('Starting photo upload...', selectedFile.name, selectedFile.size);
         
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${user.id}/${Date.now()}.${fileExt}`;
         
-        console.log('Uploading to path:', fileName);
+        logger.info('Uploading to path:', fileName);
         
         const { error: uploadError, data: uploadData } = await supabase.storage
           .from('wardrobe-photos')
           .upload(fileName, selectedFile);
 
         if (uploadError) {
-          console.error('Upload error:', uploadError);
+          logger.error('Upload error:', uploadError);
           throw uploadError;
         }
 
-        console.log('Upload successful:', uploadData);
+        logger.info('Upload successful:', uploadData);
 
         const { data: { publicUrl } } = supabase.storage
           .from('wardrobe-photos')
           .getPublicUrl(fileName);
         
-        console.log('Public URL generated:', publicUrl);
+        logger.info('Public URL generated:', publicUrl);
         photoUrl = publicUrl;
       }
 
-      console.log('Final photo URL:', photoUrl);
+      logger.info('Final photo URL:', photoUrl);
 
       // Insert wardrobe item with sanitized data
       const insertData = {
@@ -288,7 +292,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
         user_id: user.id,
       };
 
-      console.log('Inserting wardrobe item:', insertData);
+      logger.info('Inserting wardrobe item:', insertData);
 
       const { error: insertError, data: insertedData } = await supabase
         .from('wardrobe_items')
@@ -296,11 +300,11 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
         .select();
 
       if (insertError) {
-        console.error('Insert error:', insertError);
+        logger.error('Insert error:', insertError);
         throw insertError;
       }
 
-      console.log('Item inserted successfully:', insertedData);
+      logger.info('Item inserted successfully:', insertedData);
 
       // Log the creation for audit purposes
       await logEvent({
@@ -326,7 +330,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
       onItemAdded();
 
     } catch (error) {
-      console.error('Error adding item:', error);
+      logger.error('Error adding item:', error);
       toast({
         title: "Error",
         description: getSafeErrorMessage(error),
@@ -361,12 +365,11 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
                     src={previewUrl} 
                     alt="Preview" 
                     className="w-full h-32 object-cover rounded-md"
-                    onError={(e) => {
-                      console.error('Preview image failed to load:', previewUrl);
-                      console.error('Image error event:', e);
+                    onError={() => {
+                      logger.error('Preview image failed to load:', previewUrl);
                     }}
                     onLoad={() => {
-                      console.log('Preview image loaded successfully');
+                      logger.info('Preview image loaded successfully');
                     }}
                   />
                   <Button
@@ -374,7 +377,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
                     variant="outline"
                     size="sm"
                     onClick={() => {
-                      console.log('Removing preview image');
+                      logger.info('Removing preview image');
                       setSelectedFile(null);
                       setPreviewUrl(null);
                     }}
@@ -398,7 +401,7 @@ const AddWardrobeItemDialog = ({ onItemAdded }: AddWardrobeItemDialogProps) => {
                     type="button"
                     variant="outline"
                     onClick={() => {
-                      console.log('Opening file picker');
+                      logger.info('Opening file picker');
                       document.getElementById('photo')?.click();
                     }}
                   >

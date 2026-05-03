@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, MapPin, Cloud, Smile, Star } from 'lucide-react';
+import { Calendar, MapPin, Cloud, Smile, Star, Loader2 } from 'lucide-react';
 import { useOutfitLogging } from '@/hooks/useOutfitLogging';
 
 interface LogOutfitWornDialogProps {
@@ -24,6 +24,7 @@ interface LogOutfitWornDialogProps {
     }>;
   };
   children: React.ReactNode;
+  onLogged?: () => void;
 }
 
 const OCCASIONS = ['work', 'casual', 'formal', 'party', 'date', 'sports', 'home'];
@@ -31,7 +32,7 @@ const MOOD_OPTIONS = ['confident', 'comfortable', 'stylish', 'playful', 'profess
 const MAX_NOTES_LENGTH = 500;
 const MAX_LOCATION_LENGTH = 100;
 
-export function LogOutfitWornDialog({ outfit, children }: LogOutfitWornDialogProps) {
+export function LogOutfitWornDialog({ outfit, children, onLogged }: LogOutfitWornDialogProps) {
   const [open, setOpen] = useState(false);
   const { logOutfitWorn, loading } = useOutfitLogging();
   
@@ -42,44 +43,20 @@ export function LogOutfitWornDialog({ outfit, children }: LogOutfitWornDialogPro
     weather_condition: '',
     weather_temp: undefined as number | undefined,
     mood_tags: [] as string[],
-    style_satisfaction: undefined as number | undefined,
-    comfort_rating: undefined as number | undefined,
+    style_satisfaction: 5,
+    comfort_rating: 5,
     notes: '',
   });
 
   const handleSubmit = async () => {
-    const items_worn = outfit.outfit_items.map(oi => ({
-      item_id: oi.wardrobe_items.id,
-      name: oi.wardrobe_items.name,
-      category: oi.wardrobe_items.category,
-      color: oi.wardrobe_items.color,
-      brand: oi.wardrobe_items.brand,
-    }));
-
-    const success = await logOutfitWorn({
-      outfit_id: outfit.id,
-      items_worn,
-      ...formData,
-      worn_date: new Date(formData.worn_date),
-    });
-
+    const success = await logOutfitWorn(outfit.id, formData);
     if (success) {
       setOpen(false);
-      setFormData({
-        worn_date: new Date().toISOString().split('T')[0],
-        occasion: '',
-        location: '',
-        weather_condition: '',
-        weather_temp: undefined,
-        mood_tags: [],
-        style_satisfaction: undefined,
-        comfort_rating: undefined,
-        notes: '',
-      });
+      onLogged?.();
     }
   };
 
-  const toggleMoodTag = (mood: string) => {
+  const toggleMood = (mood: string) => {
     setFormData(prev => ({
       ...prev,
       mood_tags: prev.mood_tags.includes(mood)
@@ -90,97 +67,91 @@ export function LogOutfitWornDialog({ outfit, children }: LogOutfitWornDialogPro
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogTrigger asChild>
+        {children}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Log "{outfit.name}" as Worn</DialogTitle>
+          <DialogTitle className="text-2xl font-bold flex items-center gap-2">
+            <Calendar className="h-6 w-6 text-primary" />
+            Log Wear History
+          </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="worn_date">
-              <Calendar className="h-4 w-4 inline mr-2" />
-              When did you wear this?
-            </Label>
-            <Input
-              id="worn_date"
-              type="date"
-              value={formData.worn_date}
-              onChange={(e) => setFormData(prev => ({ ...prev, worn_date: e.target.value }))}
-              max={new Date().toISOString().split('T')[0]}
-            />
+        <div className="space-y-6 py-4">
+          <div className="bg-secondary/20 p-4 rounded-xl">
+            <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-1">Outfit</p>
+            <h3 className="text-xl font-bold text-primary">{outfit.name}</h3>
+            <p className="text-xs text-muted-foreground mt-1">
+              Contains {outfit.outfit_items.length} items from your wardrobe
+            </p>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="occasion">
-              <MapPin className="h-4 w-4 inline mr-2" />
-              Occasion
-            </Label>
-            <Select value={formData.occasion} onValueChange={(value) => setFormData(prev => ({ ...prev, occasion: value }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select occasion" />
-              </SelectTrigger>
-              <SelectContent className="bg-background z-50">
-                {OCCASIONS.map(occ => (
-                  <SelectItem key={occ} value={occ}>
-                    {occ.charAt(0).toUpperCase() + occ.slice(1)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="location">Location (optional)</Label>
-            <Input
-              id="location"
-              placeholder="e.g., Office, Downtown, Home"
-              value={formData.location}
-              onChange={(e) => {
-                const value = e.target.value.substring(0, MAX_LOCATION_LENGTH);
-                setFormData(prev => ({ ...prev, location: value }))
-              }}
-              maxLength={MAX_LOCATION_LENGTH}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="weather_temp">
-                <Cloud className="h-4 w-4 inline mr-2" />
-                Temperature (°F)
+              <Label htmlFor="worn_date">Date Worn</Label>
+              <Input 
+                id="worn_date" 
+                type="date" 
+                value={formData.worn_date}
+                onChange={(e) => setFormData({...formData, worn_date: e.target.value})}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="occasion">Occasion</Label>
+              <Select 
+                value={formData.occasion} 
+                onValueChange={(val) => setFormData({...formData, occasion: val})}
+              >
+                <SelectTrigger id="occasion">
+                  <SelectValue placeholder="Select occasion" />
+                </SelectTrigger>
+                <SelectContent>
+                  {OCCASIONS.map(occ => (
+                    <SelectItem key={occ} value={occ} className="capitalize">{occ}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="location" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4" /> Location
               </Label>
-              <Input
-                id="weather_temp"
-                type="number"
-                placeholder="72"
-                value={formData.weather_temp || ''}
-                onChange={(e) => setFormData(prev => ({ ...prev, weather_temp: e.target.value ? parseInt(e.target.value) : undefined }))}
+              <Input 
+                id="location" 
+                placeholder="e.g. Office, Park, Home" 
+                maxLength={MAX_LOCATION_LENGTH}
+                value={formData.location}
+                onChange={(e) => setFormData({...formData, location: e.target.value})}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="weather_condition">Condition</Label>
-              <Input
-                id="weather_condition"
-                placeholder="Sunny"
+              <Label htmlFor="weather" className="flex items-center gap-2">
+                <Cloud className="h-4 w-4" /> Weather
+              </Label>
+              <Input 
+                id="weather" 
+                placeholder="e.g. Sunny, 72°F" 
                 value={formData.weather_condition}
-                onChange={(e) => setFormData(prev => ({ ...prev, weather_condition: e.target.value }))}
+                onChange={(e) => setFormData({...formData, weather_condition: e.target.value})}
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label>
-              <Smile className="h-4 w-4 inline mr-2" />
-              How did you feel wearing this?
+          <div className="space-y-3">
+            <Label className="flex items-center gap-2">
+              <Smile className="h-4 w-4" /> How did you feel?
             </Label>
             <div className="flex flex-wrap gap-2">
               {MOOD_OPTIONS.map(mood => (
-                <Badge
+                <Badge 
                   key={mood}
-                  variant={formData.mood_tags.includes(mood) ? 'default' : 'outline'}
-                  className="cursor-pointer"
-                  onClick={() => toggleMoodTag(mood)}
+                  variant={formData.mood_tags.includes(mood) ? "default" : "outline"}
+                  className="cursor-pointer capitalize py-1.5 px-3"
+                  onClick={() => toggleMood(mood)}
                 >
                   {mood}
                 </Badge>
@@ -188,70 +159,73 @@ export function LogOutfitWornDialog({ outfit, children }: LogOutfitWornDialogPro
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>
-                <Star className="h-4 w-4 inline mr-2" />
-                Style Satisfaction
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Star className="h-4 w-4 text-fashion-gold" /> Style Satisfaction
               </Label>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map(rating => (
-                  <Button
+              <div className="flex items-center gap-2">
+                {[1,2,3,4,5].map(rating => (
+                  <button
                     key={rating}
-                    type="button"
-                    variant={formData.style_satisfaction === rating ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, style_satisfaction: rating }))}
+                    onClick={() => setFormData({...formData, style_satisfaction: rating})}
+                    className={`h-8 w-8 rounded-full border transition-all ${
+                      formData.style_satisfaction === rating 
+                        ? 'bg-primary text-white border-primary scale-110' 
+                        : 'bg-transparent text-muted-foreground border-input hover:border-primary'
+                    }`}
                   >
                     {rating}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Comfort Level</Label>
-              <div className="flex gap-1">
-                {[1, 2, 3, 4, 5].map(rating => (
-                  <Button
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Smile className="h-4 w-4 text-blue-500" /> Comfort Rating
+              </Label>
+              <div className="flex items-center gap-2">
+                {[1,2,3,4,5].map(rating => (
+                  <button
                     key={rating}
-                    type="button"
-                    variant={formData.comfort_rating === rating ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, comfort_rating: rating }))}
+                    onClick={() => setFormData({...formData, comfort_rating: rating})}
+                    className={`h-8 w-8 rounded-full border transition-all ${
+                      formData.comfort_rating === rating 
+                        ? 'bg-blue-500 text-white border-blue-500 scale-110' 
+                        : 'bg-transparent text-muted-foreground border-input hover:border-blue-500'
+                    }`}
                   >
                     {rating}
-                  </Button>
+                  </button>
                 ))}
               </div>
             </div>
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">Notes (optional)</Label>
-            <Textarea
-              id="notes"
-              placeholder="Any thoughts about this outfit? What worked well?"
-              value={formData.notes}
-              onChange={(e) => {
-                const value = e.target.value.substring(0, MAX_NOTES_LENGTH);
-                setFormData(prev => ({ ...prev, notes: value }))
-              }}
-              rows={3}
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea 
+              id="notes" 
+              placeholder="Any other details about this look?" 
+              className="resize-none h-24"
               maxLength={MAX_NOTES_LENGTH}
+              value={formData.notes}
+              onChange={(e) => setFormData({...formData, notes: e.target.value})}
             />
-            <p className="text-xs text-muted-foreground">
-              {formData.notes.length}/{MAX_NOTES_LENGTH} characters
+            <p className="text-[10px] text-right text-muted-foreground">
+              {formData.notes.length}/{MAX_NOTES_LENGTH}
             </p>
           </div>
 
-          <div className="flex gap-2 pt-4">
-            <Button onClick={handleSubmit} disabled={loading} className="flex-1">
-              {loading ? 'Saving...' : 'Log Outfit'}
-            </Button>
-            <Button variant="outline" onClick={() => setOpen(false)}>
-              Cancel
-            </Button>
-          </div>
+          <Button 
+            className="w-full h-12 text-lg font-bold" 
+            onClick={handleSubmit}
+            disabled={loading}
+          >
+            {loading ? (
+              <><Loader2 className="h-5 w-5 animate-spin mr-2" /> Saving...</>
+            ) : "Save History"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
