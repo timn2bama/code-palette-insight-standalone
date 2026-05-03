@@ -1,6 +1,7 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 import { afterEach, jest } from '@jest/globals';
+import 'fake-indexeddb/auto';
 
 // Mock import.meta.env
 (global as any).import = {

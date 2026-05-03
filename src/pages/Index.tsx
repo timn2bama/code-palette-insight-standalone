@@ -116,7 +116,7 @@ const Index = () => {
                 loading="eager"
                 width="600"
                 height="400"
-                fetchPriority="high"
+                fetchpriority="high"
               />
             </div>
           </div>

@@ -255,6 +255,7 @@ const SmartOutfitAI = ({ onOutfitCreated }: SmartOutfitAIProps) => {
                 onClick={handleGenerateSuggestions}
                 disabled={loading || !location.trim()}
                 className="w-full"
+                aria-busy={loading}
               >
                 {loading ? (
                   <>
@@ -270,6 +271,13 @@ const SmartOutfitAI = ({ onOutfitCreated }: SmartOutfitAIProps) => {
               </Button>
             </CardContent>
           </Card>
+
+          {/* ARIA Live region for screen readers */}
+          <div className="sr-only" aria-live="polite" role="status">
+            {loading && "Analyzing weather and wardrobe to generate suggestions..."}
+            {!loading && suggestions.length > 0 && `Generated ${suggestions.length} outfit suggestions.`}
+            {!loading && suggestions.length === 0 && weather && "No outfit suggestions could be generated."}
+          </div>
 
           {/* Weather Section */}
           {weather && (

@@ -27,17 +27,19 @@ jest.mock('@/hooks/use-toast', () => ({
   })),
 }));
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-      mutations: {
-        retry: false,
-      },
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      cacheTime: 0, // Disable cache for tests
     },
-  });
+    mutations: {
+      retry: false,
+    },
+  },
+});
+
+const createWrapper = () => {
   return ({ children }: { children: React.ReactNode }) => (
     React.createElement(QueryClientProvider, { client: queryClient }, children)
   );
@@ -48,6 +50,11 @@ describe('Auth Hooks', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    queryClient.clear();
+  });
+
+  afterEach(() => {
+    queryClient.clear();
   });
 
   describe('useSubscriptionQuery', () => {

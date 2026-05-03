@@ -16,13 +16,16 @@ const mockUser = {
   created_at: new Date().toISOString(),
 };
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      cacheTime: 0,
     },
-  });
+  },
+});
 
+const createWrapper = () => {
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       {children}
@@ -32,6 +35,7 @@ const createWrapper = () => {
 
 describe('useUploadLimits', () => {
   beforeEach(() => {
+    queryClient.clear();
     (useAuth as jest.Mock).mockReturnValue({
       user: mockUser,
       session: null,
