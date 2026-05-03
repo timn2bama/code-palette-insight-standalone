@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,8 +10,10 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useWardrobeAnalytics } from "@/hooks/queries/useWardrobeAnalytics";
 import { useSubscriptionTiers } from "@/hooks/queries/useSubscriptionTiers";
 import { useAuth } from "@/contexts/AuthContext";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, DollarSign, ShoppingBag, Star, ExternalLink } from "lucide-react";
+
+// Lazy load chart components
+const ChartComponents = lazy(() => import("@/components/charts/RechartsComponents"));
 
 const Analytics = () => {
   const { analytics, recommendations, loading, generateShoppingRecommendations } = useWardrobeAnalytics();
@@ -143,25 +145,31 @@ const Analytics = () => {
                 </CardHeader>
                 <CardContent className="h-[300px]">
                   {analytics && analytics.categoryBreakdown.length > 0 ? (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Pie
-                          data={analytics.categoryBreakdown}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={60}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="count"
-                          nameKey="category"
-                        >
-                          {analytics.categoryBreakdown.map((_, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
-                        </Pie>
-                        <Tooltip />
-                      </PieChart>
-                    </ResponsiveContainer>
+                    <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+                      <ChartComponents>
+                        {({ ResponsiveContainer, PieChart, Pie, Cell, Tooltip }) => (
+                          <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                              <Pie
+                                data={analytics.categoryBreakdown}
+                                cx="50%"
+                                cy="50%"
+                                innerRadius={60}
+                                outerRadius={80}
+                                paddingAngle={5}
+                                dataKey="count"
+                                nameKey="category"
+                              >
+                                {analytics.categoryBreakdown.map((_, index) => (
+                                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                ))}
+                              </Pie>
+                              <Tooltip />
+                            </PieChart>
+                          </ResponsiveContainer>
+                        )}
+                      </ChartComponents>
+                    </Suspense>
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">
                       No category data available
@@ -206,15 +214,21 @@ const Analytics = () => {
               </CardHeader>
               <CardContent className="h-[400px]">
                 {analytics && analytics.categoryBreakdown.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analytics.categoryBreakdown}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="category" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="value" name="Total Value ($)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+                    <ChartComponents>
+                      {({ ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar }) => (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={analytics.categoryBreakdown}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="category" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="value" name="Total Value ($)" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </ChartComponents>
+                  </Suspense>
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground">
                     No ROI data available
@@ -279,15 +293,21 @@ const Analytics = () => {
               </CardHeader>
               <CardContent className="h-[400px]">
                 {analytics && analytics.seasonalUsage.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={analytics.seasonalUsage}>
-                      <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                      <XAxis dataKey="season" />
-                      <YAxis />
-                      <Tooltip />
-                      <Bar dataKey="usage_count" name="Items Worn" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
+                    <ChartComponents>
+                      {({ ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar }) => (
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={analytics.seasonalUsage}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                            <XAxis dataKey="season" />
+                            <YAxis />
+                            <Tooltip />
+                            <Bar dataKey="usage_count" name="Items Worn" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
+                    </ChartComponents>
+                  </Suspense>
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground">
                     No seasonal trend data available yet

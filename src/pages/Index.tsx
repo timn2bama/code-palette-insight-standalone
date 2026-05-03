@@ -13,7 +13,7 @@ import {
   generateHowToJsonLd
 } from "@/utils/seo";
 import { generateVoiceSearchContent } from "@/utils/ai-seo";
-import heroImage from "@/assets/hero-wardrobe.jpg";
+import heroImage from "@/assets/hero-wardrobe.webp";
 
 const Index = () => {
   const navigate = useNavigate();
