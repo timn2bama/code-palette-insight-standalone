@@ -1,7 +1,7 @@
 export const logger = {
   info: (message: string, ...data: any[]) => {
     if (import.meta.env.DEV) {
-      console.log(`[INFO] ${message}`, ...data);
+      console.info(`[INFO] ${message}`, ...data);
     }
   },
   warn: (message: string, ...data: any[]) => {

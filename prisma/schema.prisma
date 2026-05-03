@@ -11,6 +11,74 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String    @unique
+  emailVerified Boolean   @default(false)
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  
+  // Custom relations for SyncStyle
+  wardrobe_items   WardrobeItem[]
+  outfits          Outfit[]
+  marketplace_items MarketplaceItem[]
+  rental_items     RentalItem[]
+  saved_services   SavedService[]
+  style_preference UserStylePreference?
+  usage_tracking   UsageTracking[]
+  subscriber       Subscriber?
+
+  @@map("user")
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@map("verification")
+}
+
 model Profile {
   id           String   @id @default(uuid())
   user_id      String   @unique
@@ -25,6 +93,7 @@ model Profile {
 model WardrobeItem {
   id               String   @id @default(uuid())
   user_id          String
+  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   name             String
   category         String
   brand            String?
@@ -51,6 +120,7 @@ model WardrobeItem {
 model Outfit {
   id           String   @id @default(uuid())
   user_id      String
+  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
   name         String
   description  String?
   occasion     String?

@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Smart outfit AI function called');
+    console.info('Smart outfit AI function called');
     
     // Get the authorization header
     const authHeader = req.headers.get('Authorization');
@@ -51,21 +51,21 @@ serve(async (req) => {
       throw new Error('Invalid user authentication');
     }
 
-    console.log('User authenticated:', user.id);
+    console.info('User authenticated:', user.id);
 
     const { location, preferences } = await req.json();
-    console.log('Request data:', { location, preferences });
+    console.info('Request data:', { location, preferences });
 
     if (!location?.trim()) {
       throw new Error('Location is required');
     }
 
     // Get weather data
-    console.log('Fetching weather for location:', location);
+    console.info('Fetching weather for location:', location);
     const weatherUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=${weatherApiKey}&units=imperial`;
     
     const weatherResponse = await fetch(weatherUrl);
-    console.log('Weather API response status:', weatherResponse.status);
+    console.info('Weather API response status:', weatherResponse.status);
     
     if (!weatherResponse.ok) {
       const errorText = await weatherResponse.text();
@@ -74,13 +74,13 @@ serve(async (req) => {
     }
     
     const weatherData = await weatherResponse.json();
-    console.log('Weather data fetched successfully:', {
+    console.info('Weather data fetched successfully:', {
       temp: weatherData.main.temp,
       condition: weatherData.weather[0].description
     });
 
     // Get user's wardrobe items
-    console.log('Fetching wardrobe items for user:', user.id);
+    console.info('Fetching wardrobe items for user:', user.id);
     const { data: wardrobeItems, error: wardrobeError } = await supabase
       .from('wardrobe_items')
       .select('id, name, category, color, brand, photo_url')
@@ -91,7 +91,7 @@ serve(async (req) => {
       throw new Error('Failed to fetch wardrobe items');
     }
 
-    console.log('Wardrobe items fetched:', wardrobeItems?.length || 0, 'items');
+    console.info('Wardrobe items fetched:', wardrobeItems?.length || 0, 'items');
 
     if (!wardrobeItems || wardrobeItems.length === 0) {
       return new Response(JSON.stringify({
@@ -152,7 +152,7 @@ Respond with a JSON object with this structure:
 
 Only suggest outfits using items that actually exist in their wardrobe. Use the exact item names.`;
 
-    console.log('Sending request to OpenAI...');
+    console.info('Sending request to OpenAI...');
     
     // Call OpenAI API
     const openAIResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -178,7 +178,7 @@ Only suggest outfits using items that actually exist in their wardrobe. Use the 
       }),
     });
 
-    console.log('OpenAI response status:', openAIResponse.status);
+    console.info('OpenAI response status:', openAIResponse.status);
 
     if (!openAIResponse.ok) {
       const errorText = await openAIResponse.text();
@@ -214,14 +214,14 @@ Only suggest outfits using items that actually exist in their wardrobe. Use the 
     }
 
     const openAIData = await openAIResponse.json();
-    console.log('OpenAI response received successfully');
+    console.info('OpenAI response received successfully');
     
     let aiSuggestions = [];
     try {
       const content = openAIData.choices[0].message.content;
       const parsed = JSON.parse(content);
       aiSuggestions = parsed.suggestions || [];
-      console.log('AI suggestions parsed successfully:', aiSuggestions.length);
+      console.info('AI suggestions parsed successfully:', aiSuggestions.length);
     } catch (parseError) {
       console.error('Error parsing AI response:', parseError);
       // Fallback suggestions
@@ -270,7 +270,7 @@ Only suggest outfits using items that actually exist in their wardrobe. Use the 
       wardrobeItemsCount: wardrobeItems.length
     };
 
-    console.log('Returning suggestions successfully:', enhancedSuggestions.length);
+    console.info('Returning suggestions successfully:', enhancedSuggestions.length);
 
     return new Response(JSON.stringify(result), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }

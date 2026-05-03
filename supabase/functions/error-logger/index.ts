@@ -43,7 +43,13 @@ serve(async (req) => {
       columnNumber: error.columnNumber
     };
 
-    console[logLevel]('Error Log:', JSON.stringify(logEntry, null, 2));
+    if (logLevel === 'error') {
+      console.error('Error Log:', JSON.stringify(logEntry, null, 2));
+    } else if (logLevel === 'warn') {
+      console.warn('Error Log:', JSON.stringify(logEntry, null, 2));
+    } else {
+      console.info('Error Log:', JSON.stringify(logEntry, null, 2));
+    }
 
     // In production, you would:
     // 1. Store in error tracking database (Sentry, Bugsnag, etc.)

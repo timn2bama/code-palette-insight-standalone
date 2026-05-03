@@ -67,21 +67,21 @@ serve(async (req) => {
       );
     }
 
-          console.log(`Fetching weather for ${locations.length} locations`);
-          console.log(`API Key present: ${apiKey ? 'Yes' : 'No'}`);
-          console.log(`API Key length: ${apiKey ? apiKey.length : 0}`);
+          console.info(`Fetching weather for ${locations.length} locations`);
+          console.info(`API Key present: ${apiKey ? 'Yes' : 'No'}`);
+          console.info(`API Key length: ${apiKey ? apiKey.length : 0}`);
 
           // Fetch weather for all locations in parallel
           const weatherPromises = locations.map(async (location: { latitude: number; longitude: number; name?: string }) => {
             try {
-              console.log(`Fetching weather for ${location.name}: ${location.latitude}, ${location.longitude}`);
+              console.info(`Fetching weather for ${location.name}: ${location.latitude}, ${location.longitude}`);
               
               // Fetch weather data from WeatherAPI.com
               const weatherUrl = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${location.latitude},${location.longitude}&days=6&aqi=no&alerts=no`;
-              console.log(`URL for ${location.name}: ${weatherUrl.replace(apiKey, 'HIDDEN_API_KEY')}`);
+              console.info(`URL for ${location.name}: ${weatherUrl.replace(apiKey, 'HIDDEN_API_KEY')}`);
               
               const weatherResponse = await fetch(weatherUrl);
-              console.log(`Response status for ${location.name}: ${weatherResponse.status}`);
+              console.info(`Response status for ${location.name}: ${weatherResponse.status}`);
               
               if (!weatherResponse.ok) {
                 const errorText = await weatherResponse.text();
@@ -134,7 +134,7 @@ serve(async (req) => {
     });
 
     const results = await Promise.all(weatherPromises);
-    console.log(`Weather data fetched for ${results.length} locations`);
+    console.info(`Weather data fetched for ${results.length} locations`);
 
     return new Response(
       JSON.stringify({ locations: results }),

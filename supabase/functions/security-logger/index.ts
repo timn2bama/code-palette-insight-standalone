@@ -56,7 +56,7 @@ serve(async (req) => {
       severity: getSeverityLevel(event_type)
     };
 
-    console.log('Security Event:', JSON.stringify(logEntry, null, 2));
+    console.info('Security Event:', JSON.stringify(logEntry, null, 2));
 
     // Check for patterns that might indicate an attack
     await checkForSuspiciousPatterns(supabase, logEntry);

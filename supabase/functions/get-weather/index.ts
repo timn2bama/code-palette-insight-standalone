@@ -66,14 +66,14 @@ serve(async (req) => {
       );
     }
 
-    console.log(`Fetching weather for coordinates: ${latitude}, ${longitude}`);
+    console.info(`Fetching weather for coordinates: ${latitude}, ${longitude}`);
 
     // Fetch current weather and forecast from WeatherAPI.com
     const weatherUrl = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${latitude},${longitude}&days=6&aqi=no&alerts=no`;
-    console.log(`Weather URL: ${weatherUrl.replace(apiKey, 'HIDDEN_API_KEY')}`);
+    console.info(`Weather URL: ${weatherUrl.replace(apiKey, 'HIDDEN_API_KEY')}`);
     
     const weatherResponse = await fetch(weatherUrl);
-    console.log(`Weather response status: ${weatherResponse.status}`);
+    console.info(`Weather response status: ${weatherResponse.status}`);
     
     if (!weatherResponse.ok) {
       const errorText = await weatherResponse.text();
@@ -112,7 +112,7 @@ serve(async (req) => {
       forecast: dailyForecasts,
     };
 
-    console.log('Weather data fetched successfully:', result);
+    console.info('Weather data fetched successfully:', result);
 
     return new Response(
       JSON.stringify(result),

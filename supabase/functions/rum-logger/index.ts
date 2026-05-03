@@ -38,17 +38,17 @@ serve(async (req) => {
 
     switch (action) {
       case 'session_start':
-        console.log('RUM Session Started:', JSON.stringify(session, null, 2));
+        console.info('RUM Session Started:', JSON.stringify(session, null, 2));
         // Store session data in analytics database
         break;
 
       case 'page_view':
-        console.log('RUM Page View:', { session_id, path, timestamp });
+        console.info('RUM Page View:', { session_id, path, timestamp });
         // Track page views for user journey analysis
         break;
 
       case 'interaction':
-        console.log('RUM Interaction:', JSON.stringify({ session_id, interaction }, null, 2));
+        console.info('RUM Interaction:', JSON.stringify({ session_id, interaction }, null, 2));
         // Track user interactions for UX analysis
         break;
 

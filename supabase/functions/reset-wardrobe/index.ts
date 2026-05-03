@@ -48,7 +48,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const userId = userData.user.id;
-    console.log(`[reset-wardrobe] Starting deletion for user: ${userId}`);
+    console.info(`[reset-wardrobe] Starting deletion for user: ${userId}`);
 
     // 1) Collect outfit IDs for the user
     const { data: outfits, error: outfitsSelectError } = await supabase
@@ -131,7 +131,7 @@ Deno.serve(async (req: Request) => {
       },
     };
 
-    console.log("[reset-wardrobe] Completed:", result);
+    console.info("[reset-wardrobe] Completed:", result);
 
     return new Response(JSON.stringify({ success: true, ...result }), {
       status: 200,

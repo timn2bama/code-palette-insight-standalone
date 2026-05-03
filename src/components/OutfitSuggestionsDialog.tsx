@@ -32,7 +32,7 @@ const OutfitSuggestionsDialog = ({ baseItem, children, onOutfitCreated }: Outfit
     if (open) {
       generateSuggestions(baseItem);
     }
-  }, [open, baseItem]);
+  }, [open, baseItem, generateSuggestions]);
 
   const handleCreateOutfit = async (suggestionId: string) => {
     const suggestion = suggestions.find(s => s.id === suggestionId);

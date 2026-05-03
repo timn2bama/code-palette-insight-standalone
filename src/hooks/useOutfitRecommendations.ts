@@ -1,7 +1,7 @@
 // Copyright (c) 2025 Tim N. (timn2bama)
 // Licensed under the Apache License, Version 2.0.
 // See the LICENSE file in the project root for license information.
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { logger } from "@/utils/logger";
@@ -28,28 +28,7 @@ export const useOutfitRecommendations = () => {
   const [loading, setLoading] = useState(false);
   const { user } = useAuth();
 
-  const generateSuggestions = async (baseItem?: WardrobeItem) => {
-    if (!user) return;
-
-    setLoading(true);
-    try {
-      const { data: wardrobeItems, error } = await supabase
-        .from('wardrobe_items')
-        .select('*');
-
-      if (error) throw error;
-
-      // Simple outfit recommendation algorithm
-      const outfitSuggestions = generateOutfitCombinations(wardrobeItems, baseItem);
-      setSuggestions(outfitSuggestions);
-    } catch (error) {
-      logger.error('Error generating outfit suggestions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const generateOutfitCombinations = (
+  const generateOutfitCombinations = useCallback((
     items: WardrobeItem[], 
     baseItem?: WardrobeItem
   ): OutfitSuggestion[] => {
@@ -117,7 +96,6 @@ export const useOutfitRecommendations = () => {
 
         if (categoryItems.length > 0) {
           // Simple selection: pick first available item
-          // In a real app, this would be more sophisticated (color matching, style compatibility, etc.)
           const selectedItem = categoryItems[Math.floor(Math.random() * categoryItems.length)];
           outfitItems.push(selectedItem);
         } else {
@@ -141,9 +119,30 @@ export const useOutfitRecommendations = () => {
 
     // Sort by match score
     return suggestions.sort((a, b) => b.matchScore - a.matchScore).slice(0, 6);
-  };
+  }, []);
 
-  const createOutfitFromSuggestion = async (suggestion: OutfitSuggestion, name: string) => {
+  const generateSuggestions = useCallback(async (baseItem?: WardrobeItem) => {
+    if (!user) return;
+
+    setLoading(true);
+    try {
+      const { data: wardrobeItems, error } = await supabase
+        .from('wardrobe_items')
+        .select('*');
+
+      if (error) throw error;
+
+      // Simple outfit recommendation algorithm
+      const outfitSuggestions = generateOutfitCombinations(wardrobeItems, baseItem);
+      setSuggestions(outfitSuggestions);
+    } catch (error) {
+      logger.error('Error generating outfit suggestions:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, [user, generateOutfitCombinations]);
+
+  const createOutfitFromSuggestion = useCallback(async (suggestion: OutfitSuggestion, name: string) => {
     if (!user) return;
 
     try {
@@ -179,7 +178,7 @@ export const useOutfitRecommendations = () => {
       logger.error('Error creating outfit from suggestion:', error);
       throw error;
     }
-  };
+  }, [user]);
 
   return {
     suggestions,

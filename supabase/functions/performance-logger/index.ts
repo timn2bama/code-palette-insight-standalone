@@ -41,7 +41,7 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       };
 
-      console.log('Performance Metric:', JSON.stringify(performanceData, null, 2));
+      console.info('Performance Metric:', JSON.stringify(performanceData, null, 2));
 
       // In production, you would store this in a time-series database
       // or analytics service like Google Analytics, Mixpanel, etc.
@@ -65,7 +65,7 @@ serve(async (req) => {
         timestamp: new Date().toISOString()
       };
 
-      console.log('Custom Metric:', JSON.stringify(customData, null, 2));
+      console.info('Custom Metric:', JSON.stringify(customData, null, 2));
     }
 
     return new Response(

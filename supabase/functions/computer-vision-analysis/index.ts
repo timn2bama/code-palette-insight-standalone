@@ -161,7 +161,7 @@ serve(async (req) => {
     }
 
     // Log successful analysis
-    console.log('Computer vision analysis completed:', {
+    console.info('Computer vision analysis completed:', {
       category: analysis.category,
       confidence: analysis.confidence,
       colorsDetected: analysis.colors?.palette?.length || 0,

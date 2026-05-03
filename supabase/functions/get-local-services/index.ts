@@ -51,7 +51,7 @@ serve(async (req) => {
     globalThis.servicesRequests = requests;
 
     const { location, radius = 10000 } = await req.json();
-    console.log('Request received:', { location, radius });
+    console.info('Request received:', { location, radius });
     
     // Input validation
     if (!location || typeof location !== 'string' || location.length < 2 || location.length > 100) {
@@ -78,7 +78,7 @@ serve(async (req) => {
     }
 
     const apiKey = Deno.env.get('GOOGLE_PLACES_API_KEY');
-    console.log('API Key exists:', !!apiKey);
+    console.info('API Key exists:', !!apiKey);
     if (!apiKey) {
       console.error('Google Places API key not found in environment');
       return new Response(
@@ -142,7 +142,7 @@ serve(async (req) => {
         const textSearchUrl = `https://maps.googleapis.com/maps/api/place/textsearch/json?query=${encodeURIComponent(term + ' in ' + location)}&key=${apiKey}`;
         
         try {
-          console.log(`Text searching for: ${term} in ${location}`);
+          console.info(`Text searching for: ${term} in ${location}`);
           
           const response = await fetch(textSearchUrl);
           
@@ -153,7 +153,7 @@ serve(async (req) => {
           
           const data = await response.json();
           
-          console.log(`Text API Response for ${term}:`, {
+          console.info(`Text API Response for ${term}:`, {
             status: data.status,
             resultsCount: data.results?.length || 0,
             error: data.error_message
@@ -201,7 +201,7 @@ serve(async (req) => {
     const totalServices = Object.values(servicesByCategory).reduce((sum, services) => sum + services.length, 0);
     
     if (totalServices === 0) {
-      console.log('No services found, adding test data');
+      console.info('No services found, adding test data');
       // Add sample data for all categories
       servicesByCategory['cleaners'] = [
         {
