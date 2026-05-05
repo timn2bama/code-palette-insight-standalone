@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import Navigation from "@/components/Navigation";
 import CreateOutfitDialog from "@/components/CreateOutfitDialog";
-import SmartOutfitAI from "@/components/SmartOutfitAI";
+import SmartOutfitAI from "@/components/ai-stylist/SmartOutfitAI";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";

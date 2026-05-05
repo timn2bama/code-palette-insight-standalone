@@ -1,7 +1,5 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '@/integrations/supabase/client';
-import { validateEmail, getSafeErrorMessage, rateLimiter } from '@/lib/security';
+import { authClient } from '@/lib/auth-client';
 import { logger } from "@/utils/logger";
 
 interface SubscriptionStatus {
@@ -11,8 +9,8 @@ interface SubscriptionStatus {
 }
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+  user: any;
+  session: any;
   loading: boolean;
   subscriptionStatus: SubscriptionStatus;
   checkSubscription: () => Promise<void>;
@@ -32,138 +30,76 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: session, isPending: loading } = authClient.useSession();
   const [subscriptionStatus, setSubscriptionStatus] = useState<SubscriptionStatus>({ subscribed: false });
 
   const checkSubscription = useCallback(async () => {
-    if (!user) return;
+    if (!session?.user) return;
     
     try {
-      const { data, error } = await supabase.functions.invoke('check-subscription');
-      if (error) throw error;
+      const response = await fetch('/api/analytics/subscription');
+      if (!response.ok) throw new Error('Failed to fetch subscription');
+      const data = await response.json();
       setSubscriptionStatus(data);
     } catch (error) {
       logger.error('Error checking subscription:', error);
-      // Set to unsubscribed state on error to avoid blocking UI
       setSubscriptionStatus({ subscribed: false });
     }
-  }, [user]);
+  }, [session?.user]);
 
   useEffect(() => {
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        setLoading(false);
-        
-        // Check subscription status when user changes
-        if (session?.user) {
-          setTimeout(() => {
-            checkSubscription();
-          }, 0);
-        } else {
-          setSubscriptionStatus({ subscribed: false });
-        }
-      }
-    );
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-      
-      // Check subscription status for existing session
-      if (session?.user) {
-        setTimeout(() => {
-          checkSubscription();
-        }, 0);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [checkSubscription]);
+    if (session?.user) {
+      checkSubscription();
+    } else {
+      setSubscriptionStatus({ subscribed: false });
+    }
+  }, [session, checkSubscription]);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
-    // Rate limiting
-    if (!rateLimiter.isAllowed('signup', 3, 300000)) { // 3 attempts per 5 minutes
-      return { error: new Error('Too many signup attempts. Please wait before trying again.') };
-    }
-
-    // Validate email
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      return { error: new Error(emailValidation.error || 'Invalid email') };
-    }
-
-    // Password strength check
-    if (password.length < 8) {
-      return { error: new Error('Password must be at least 8 characters long') };
-    }
-
     try {
-      const redirectUrl = `${window.location.origin}/`;
-      
-      const { error } = await supabase.auth.signUp({
-        email: email.toLowerCase().trim(),
+      const { data, error } = await authClient.signUp.email({
+        email,
         password,
-        options: {
-          emailRedirectTo: redirectUrl,
-          data: {
-            display_name: displayName?.trim()
-          }
-        }
+        name: displayName,
       });
-      
-      return { error: error ? new Error(getSafeErrorMessage(error)) : null };
+      if (error) {
+        logger.error('SignUp Error:', error);
+      }
+      return { error };
     } catch (error) {
-      return { error: new Error(getSafeErrorMessage(error)) };
+      logger.error('SignUp Exception:', error);
+      return { error };
     }
   };
 
   const signIn = async (email: string, password: string) => {
-    // Rate limiting for failed login attempts
-    const loginKey = `login-${email.toLowerCase()}`;
-    if (!rateLimiter.isAllowed(loginKey, 5, 300000)) { // 5 attempts per 5 minutes
-      return { error: new Error('Too many login attempts. Please wait before trying again.') };
-    }
-
-    // Validate email
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      return { error: new Error(emailValidation.error || 'Invalid email') };
-    }
-
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.toLowerCase().trim(),
-        password
+      const { data, error } = await authClient.signIn.email({
+        email,
+        password,
       });
-      
       if (error) {
-        // Don't reset rate limiter on failed login
-        return { error: new Error(getSafeErrorMessage(error)) };
-      } else {
-        // Reset rate limiter on successful login
-        rateLimiter.reset(loginKey);
-        return { error: null };
+        logger.error('SignIn Error:', error);
       }
+      return { error };
     } catch (error) {
-      return { error: new Error(getSafeErrorMessage(error)) };
+      logger.error('SignIn Exception:', error);
+      return { error };
     }
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    return { error };
+    try {
+      const { error } = await authClient.signOut();
+      return { error };
+    } catch (error) {
+      return { error };
+    }
   };
 
   const value = {
-    user,
-    session,
+    user: session?.user ?? null,
+    session: session ?? null,
     loading,
     subscriptionStatus,
     checkSubscription,

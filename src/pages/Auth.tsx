@@ -48,7 +48,11 @@ const Auth = () => {
       } else {
         const { error } = await signIn(data.email, data.password);
         if (error) {
-          toast.error(error.message);
+          console.error("Login detail:", error);
+          toast.error("Login Failed", {
+            description: error.message || JSON.stringify(error),
+            duration: 10000,
+          });
         } else {
           toast.success("Welcome back!");
           navigate("/");

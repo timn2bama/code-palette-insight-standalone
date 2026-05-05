@@ -3,12 +3,11 @@
 
 generator client {
   provider = "prisma-client-js"
+  engineType = "library"
 }
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -21,16 +20,17 @@ model User {
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
-  
+
   // Custom relations for SyncStyle
-  wardrobe_items   WardrobeItem[]
-  outfits          Outfit[]
-  marketplace_items MarketplaceItem[]
-  rental_items     RentalItem[]
-  saved_services   SavedService[]
-  style_preference UserStylePreference?
-  usage_tracking   UsageTracking[]
-  subscriber       Subscriber?
+  wardrobe_items        WardrobeItem[]
+  outfits               Outfit[]
+  marketplace_items     MarketplaceItem[]
+  rental_items          RentalItem[]
+  saved_services        SavedService[]
+  style_preference      UserStylePreference? @relation(fields: [userStylePreferenceId], references: [id])
+  usage_tracking        UsageTracking[]
+  subscriber            Subscriber?
+  userStylePreferenceId String?
 
   @@map("user")
 }
@@ -91,22 +91,22 @@ model Profile {
 }
 
 model WardrobeItem {
-  id               String   @id @default(uuid())
-  user_id          String
-  user             User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  name             String
-  category         String
-  brand            String?
-  color            String?
-  photo_url        String?
-  wear_count       Int      @default(0)
-  last_worn        DateTime?
-  purchase_date    DateTime?
-  dominant_color   String?
-  color_palette    Json?
-  detected_labels  Json?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  id              String    @id @default(uuid())
+  user_id         String
+  user            User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name            String
+  category        String
+  brand           String?
+  color           String?
+  photo_url       String?
+  wear_count      Int       @default(0)
+  last_worn       DateTime?
+  purchase_date   DateTime?
+  dominant_color  String?
+  color_palette   Json?
+  detected_labels Json?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
 
   outfit_items     OutfitItem[]
   marketplace_item MarketplaceItem?
@@ -118,19 +118,19 @@ model WardrobeItem {
 }
 
 model Outfit {
-  id           String   @id @default(uuid())
-  user_id      String
-  user         User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  name         String
-  description  String?
-  occasion     String?
-  season       String?
-  is_public    Boolean  @default(false)
-  created_at   DateTime @default(now())
-  updated_at   DateTime @updatedAt
+  id          String   @id @default(uuid())
+  user_id     String
+  user        User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  occasion    String?
+  season      String?
+  is_public   Boolean  @default(false)
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
 
-  items        OutfitItem[]
-  wear_logs    OutfitWearLog[]
+  items     OutfitItem[]
+  wear_logs OutfitWearLog[]
 
   @@map("outfits")
 }
@@ -141,16 +141,16 @@ model OutfitItem {
   wardrobe_item_id String
   created_at       DateTime @default(now())
 
-  outfit           Outfit       @relation(fields: [outfit_id], references: [id], onDelete: Cascade)
-  wardrobe_item    WardrobeItem @relation(fields: [wardrobe_item_id], references: [id], onDelete: Cascade)
+  outfit        Outfit       @relation(fields: [outfit_id], references: [id], onDelete: Cascade)
+  wardrobe_item WardrobeItem @relation(fields: [wardrobe_item_id], references: [id], onDelete: Cascade)
 
   @@map("outfit_items")
 }
 
 model MarketplaceItem {
-  id                   String   @id @default(uuid())
+  id                   String    @id @default(uuid())
   seller_id            String
-  wardrobe_item_id     String?  @unique
+  wardrobe_item_id     String?   @unique
   title                String
   description          String?
   price                Float
@@ -159,15 +159,17 @@ model MarketplaceItem {
   size                 String?
   brand                String?
   photos               Json?
-  is_available         Boolean  @default(true)
-  shipping_included    Boolean  @default(false)
+  is_available         Boolean   @default(true)
+  shipping_included    Boolean   @default(false)
   sustainability_score Int?
   buyer_id             String?
   sold_at              DateTime?
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
 
-  wardrobe_item        WardrobeItem? @relation(fields: [wardrobe_item_id], references: [id])
+  wardrobe_item WardrobeItem? @relation(fields: [wardrobe_item_id], references: [id])
+  user          User?         @relation(fields: [userId], references: [id])
+  userId        String?
 
   @@map("marketplace_items")
 }
@@ -191,8 +193,10 @@ model RentalItem {
   created_at        DateTime @default(now())
   updated_at        DateTime @updatedAt
 
-  wardrobe_item     WardrobeItem? @relation(fields: [wardrobe_item_id], references: [id])
-  bookings          RentalBooking[]
+  wardrobe_item WardrobeItem?   @relation(fields: [wardrobe_item_id], references: [id])
+  bookings      RentalBooking[]
+  user          User?           @relation(fields: [userId], references: [id])
+  userId        String?
 
   @@map("rental_items")
 }
@@ -213,7 +217,7 @@ model RentalBooking {
   created_at           DateTime @default(now())
   updated_at           DateTime @updatedAt
 
-  rental_item          RentalItem @relation(fields: [rental_item_id], references: [id])
+  rental_item RentalItem @relation(fields: [rental_item_id], references: [id])
 
   @@map("rental_bookings")
 }
@@ -227,6 +231,8 @@ model SavedService {
   service_data    Json
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
+  user            User?    @relation(fields: [userId], references: [id])
+  userId          String?
 
   @@map("saved_services")
 }
@@ -267,41 +273,41 @@ model OutfitWearLog {
   created_at         DateTime @default(now())
   updated_at         DateTime @updatedAt
 
-  outfit             Outfit?  @relation(fields: [outfit_id], references: [id])
+  outfit Outfit? @relation(fields: [outfit_id], references: [id])
 
   @@map("outfit_wear_logs")
 }
 
 model WardrobeAnalytics {
-  id               String   @id @default(uuid())
+  id               String    @id @default(uuid())
   user_id          String
   wardrobe_item_id String
-  wear_count       Int      @default(0)
+  wear_count       Int       @default(0)
   total_cost       Float?
   cost_per_wear    Float?
   last_calculated  DateTime?
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
 
-  wardrobe_item    WardrobeItem @relation(fields: [wardrobe_item_id], references: [id])
+  wardrobe_item WardrobeItem @relation(fields: [wardrobe_item_id], references: [id])
 
   @@map("wardrobe_analytics")
 }
 
 model CarbonFootprintItem {
-  id                   String   @id @default(uuid())
-  user_id              String
-  wardrobe_item_id     String   @unique
-  manufacturing_impact Float?
+  id                    String   @id @default(uuid())
+  user_id               String
+  wardrobe_item_id      String   @unique
+  manufacturing_impact  Float?
   transportation_impact Float?
-  usage_impact         Float?
-  disposal_impact      Float?
-  total_footprint      Float?
-  last_calculated      DateTime @default(now())
-  created_at           DateTime @default(now())
-  updated_at           DateTime @updatedAt
+  usage_impact          Float?
+  disposal_impact       Float?
+  total_footprint       Float?
+  last_calculated       DateTime @default(now())
+  created_at            DateTime @default(now())
+  updated_at            DateTime @updatedAt
 
-  wardrobe_item        WardrobeItem @relation(fields: [wardrobe_item_id], references: [id])
+  wardrobe_item WardrobeItem @relation(fields: [wardrobe_item_id], references: [id])
 
   @@map("carbon_footprint_items")
 }
@@ -319,15 +325,31 @@ model IntegrationSetting {
 }
 
 model UsageTracking {
-  id                  String   @id @default(uuid())
-  user_id             String
-  usage_type          String
-  usage_count         Int      @default(0)
+  id                   String   @id @default(uuid())
+  user_id              String
+  usage_type           String
+  usage_count          Int      @default(0)
   billing_period_start DateTime
   billing_period_end   DateTime
-  created_at          DateTime @default(now())
+  created_at           DateTime @default(now())
+  user                 User?    @relation(fields: [userId], references: [id])
+  userId               String?
 
   @@map("usage_tracking")
+}
+
+model Subscriber {
+  id           String    @id @default(uuid())
+  user_id      String    @unique
+  user         User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  tier         String    @default("free")
+  status       String    @default("active")
+  period_start DateTime  @default(now())
+  period_end   DateTime?
+  created_at   DateTime  @default(now())
+  updated_at   DateTime  @updatedAt
+
+  @@map("subscribers")
 }
 
 model UserStylePreference {
@@ -339,6 +361,7 @@ model UserStylePreference {
   style_keywords  String[]
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
+  users           User[]
 
   @@map("user_style_preferences")
 }

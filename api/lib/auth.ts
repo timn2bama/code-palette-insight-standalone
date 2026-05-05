@@ -1,18 +1,28 @@
-import { createClient } from '@supabase/supabase-js';
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { prisma } from "./prisma";
 import type { VercelRequest } from '@vercel/node';
 
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY!;
-
-export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+export const auth = betterAuth({
+  database: prismaAdapter(prisma, {
+    provider: "postgresql",
+  }),
+  emailAndPassword: {
+    enabled: true,
+  },
+});
 
 export async function verifyUser(req: VercelRequest) {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) return null;
+  const session = await auth.api.getSession({
+    headers: req.headers as any,
+  });
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-
-  if (error || !user) return null;
-  return user;
+  if (!session || !session.user) return null;
+  
+  // Return standard user object structure
+  return {
+    id: session.user.id,
+    email: session.user.email,
+    name: session.user.name,
+  };
 }

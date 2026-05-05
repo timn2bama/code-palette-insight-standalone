@@ -1,5 +1,4 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const useWardrobeItems = (userId?: string) => {
@@ -8,14 +7,9 @@ export const useWardrobeItems = (userId?: string) => {
     queryFn: async () => {
       if (!userId) return [];
       
-      const { data, error } = await supabase
-        .from('wardrobe_items')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-      
-      if (error) throw error;
-      return data || [];
+      const response = await fetch('/api/wardrobe');
+      if (!response.ok) throw new Error('Failed to fetch items');
+      return response.json();
     },
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes
@@ -28,15 +22,12 @@ export const useWardrobeItemsByCategory = (userId?: string) => {
     queryFn: async () => {
       if (!userId) return {};
       
-      const { data, error } = await supabase
-        .from('wardrobe_items')
-        .select('category')
-        .eq('user_id', userId);
-      
-      if (error) throw error;
+      const response = await fetch('/api/wardrobe');
+      if (!response.ok) throw new Error('Failed to fetch items');
+      const data = await response.json();
       
       // Count items per category
-      const counts = data?.reduce((acc: { [key: string]: number }, item) => {
+      const counts = data?.reduce((acc: { [key: string]: number }, item: any) => {
         acc[item.category] = (acc[item.category] || 0) + 1;
         return acc;
       }, {}) || {};
@@ -57,17 +48,19 @@ export const useCreateWardrobeItem = () => {
   
   return useMutation({
     mutationFn: async (item: any) => {
-      const { data, error } = await supabase
-        .from('wardrobe_items')
-        .insert(item)
-        .select()
-        .single();
+      const response = await fetch('/api/wardrobe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(item),
+      });
       
-      if (error) throw error;
-      return data;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to add item');
+      }
+      return response.json();
     },
     onSuccess: () => {
-      // Invalidate and refetch wardrobe items
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items-by-category'] });
       
@@ -92,15 +85,17 @@ export const useUpdateWardrobeItem = () => {
   
   return useMutation({
     mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
-      const { data, error } = await supabase
-        .from('wardrobe_items')
-        .update(updates)
-        .eq('id', id)
-        .select()
-        .single();
+      const response = await fetch(`/api/wardrobe/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
       
-      if (error) throw error;
-      return data;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to update item');
+      }
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
@@ -125,12 +120,14 @@ export const useDeleteWardrobeItem = () => {
   
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('wardrobe_items')
-        .delete()
-        .eq('id', id);
+      const response = await fetch(`/api/wardrobe/${id}`, {
+        method: 'DELETE',
+      });
       
-      if (error) throw error;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to delete item');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
