@@ -28,3 +28,7 @@ dist-ssr
 
 .vercel
 .env*.local
+
+# Test and Worktrees
+test-results/
+.worktrees/
