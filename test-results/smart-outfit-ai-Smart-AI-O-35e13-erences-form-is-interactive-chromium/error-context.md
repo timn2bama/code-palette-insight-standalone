@@ -98,7 +98,7 @@ Call log:
             - generic [ref=e80]: 300ms
             - generic [ref=e81]: ✓
         - progressbar [ref=e82]
-      - generic [ref=e85]: "Press Ctrl+Shift+P to toggle • Session: r691xeub"
+      - generic [ref=e85]: "Press Ctrl+Shift+P to toggle • Session: 6tdmxm2y"
   - generic [ref=e86]:
     - img [ref=e88]
     - button "Open Tanstack query devtools" [ref=e136] [cursor=pointer]:
