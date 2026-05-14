@@ -11,7 +11,7 @@ import {
   Cell 
 } from 'recharts';
 
-export const ChartComponents = {
+const RechartsComponents = {
   BarChart,
   Bar,
   XAxis,
@@ -24,4 +24,12 @@ export const ChartComponents = {
   Cell
 };
 
-export default ChartComponents;
+export interface RechartsProviderProps {
+  children: (components: typeof RechartsComponents) => React.ReactNode;
+}
+
+export const RechartsProvider = ({ children }: RechartsProviderProps) => {
+  return <>{children(RechartsComponents)}</>;
+};
+
+export default RechartsProvider;

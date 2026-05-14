@@ -13,7 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { TrendingUp, DollarSign, ShoppingBag, Star, ExternalLink } from "lucide-react";
 
 // Lazy load chart components
-const ChartComponents = lazy(() => import("@/components/charts/RechartsComponents"));
+const RechartsProvider = lazy(() => import("@/components/charts/RechartsComponents"));
 
 const Analytics = () => {
   const { analytics, recommendations, loading, generateShoppingRecommendations } = useWardrobeAnalytics();
@@ -146,8 +146,8 @@ const Analytics = () => {
                 <CardContent className="h-[300px]">
                   {analytics && analytics.categoryBreakdown.length > 0 ? (
                     <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
-                      <ChartComponents>
-                        {({ ResponsiveContainer, PieChart, Pie, Cell, Tooltip }) => (
+                      <RechartsProvider>
+                        {({ ResponsiveContainer, PieChart, Pie, Cell, Tooltip }: any) => (
                           <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
                               <Pie
@@ -168,7 +168,7 @@ const Analytics = () => {
                             </PieChart>
                           </ResponsiveContainer>
                         )}
-                      </ChartComponents>
+                      </RechartsProvider>
                     </Suspense>
                   ) : (
                     <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -215,8 +215,8 @@ const Analytics = () => {
               <CardContent className="h-[400px]">
                 {analytics && analytics.categoryBreakdown.length > 0 ? (
                   <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
-                    <ChartComponents>
-                      {({ ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar }) => (
+                    <RechartsProvider>
+                      {({ ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar }: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={analytics.categoryBreakdown}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -227,7 +227,7 @@ const Analytics = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       )}
-                    </ChartComponents>
+                    </RechartsProvider>
                   </Suspense>
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground">
@@ -294,8 +294,8 @@ const Analytics = () => {
               <CardContent className="h-[400px]">
                 {analytics && analytics.seasonalUsage.length > 0 ? (
                   <Suspense fallback={<div className="flex h-full items-center justify-center"><LoadingSpinner /></div>}>
-                    <ChartComponents>
-                      {({ ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar }) => (
+                    <RechartsProvider>
+                      {({ ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar }: any) => (
                         <ResponsiveContainer width="100%" height="100%">
                           <BarChart data={analytics.seasonalUsage}>
                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
@@ -306,7 +306,7 @@ const Analytics = () => {
                           </BarChart>
                         </ResponsiveContainer>
                       )}
-                    </ChartComponents>
+                    </RechartsProvider>
                   </Suspense>
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground">
