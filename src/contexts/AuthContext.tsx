@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { authClient } from '@/lib/auth-client';
 import { logger } from "@/utils/logger";
+import { User, Session } from '@/types';
 
 interface SubscriptionStatus {
   subscribed: boolean;
@@ -9,8 +10,8 @@ interface SubscriptionStatus {
 }
 
 interface AuthContextType {
-  user: any;
-  session: any;
+  user: User | null;
+  session: Session | null;
   loading: boolean;
   subscriptionStatus: SubscriptionStatus;
   checkSubscription: () => Promise<void>;
@@ -90,8 +91,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const value = {
-    user: session?.user ?? null,
-    session: session ?? null,
+    user: (session?.user as User) ?? null,
+    session: (session as unknown as Session) ?? null,
     loading,
     subscriptionStatus,
     checkSubscription,
