@@ -1,20 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { WardrobeItem } from '@/types';
+import api from '@/lib/api';
 
 export const useWardrobeItems = (userId?: string) => {
   return useQuery<WardrobeItem[]>({
     queryKey: ['wardrobe-items', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      
-      const response = await fetch('/api/wardrobe');
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch items');
-      }
-      return response.json();
-    },
+    queryFn: () => api.get('/wardrobe'),
     enabled: !!userId,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
@@ -26,9 +18,7 @@ export const useWardrobeItemsByCategory = (userId?: string) => {
     queryFn: async () => {
       if (!userId) return [];
       
-      const response = await fetch('/api/wardrobe');
-      if (!response.ok) throw new Error('Failed to fetch items');
-      const data: WardrobeItem[] = await response.json();
+      const data: WardrobeItem[] = await api.get('/wardrobe');
       
       // Count items per category
       const counts = data?.reduce((acc: { [key: string]: number }, item) => {
@@ -51,20 +41,7 @@ export const useCreateWardrobeItem = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async (item: Partial<WardrobeItem>) => {
-      const response = await fetch('/api/wardrobe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create item');
-      }
-      
-      return response.json();
-    },
+    mutationFn: (item: Partial<WardrobeItem>) => api.post('/wardrobe', item),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       toast({
@@ -72,13 +49,6 @@ export const useCreateWardrobeItem = () => {
         description: "Wardrobe item added successfully.",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   });
 };
 
@@ -87,20 +57,8 @@ export const useUpdateWardrobeItem = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async ({ id, ...item }: Partial<WardrobeItem> & { id: string }) => {
-      const response = await fetch(`/api/wardrobe/${id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(item),
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to update item');
-      }
-      
-      return response.json();
-    },
+    mutationFn: ({ id, ...item }: Partial<WardrobeItem> & { id: string }) => 
+      api.patch(`/wardrobe/${id}`, item),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       toast({
@@ -108,13 +66,6 @@ export const useUpdateWardrobeItem = () => {
         description: "Wardrobe item updated successfully.",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   });
 };
 
@@ -123,18 +74,7 @@ export const useDeleteWardrobeItem = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/wardrobe/${id}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete item');
-      }
-      
-      return response.json();
-    },
+    mutationFn: (id: string) => api.delete(`/wardrobe/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       toast({
@@ -142,12 +82,5 @@ export const useDeleteWardrobeItem = () => {
         description: "Wardrobe item deleted successfully.",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   });
 };
