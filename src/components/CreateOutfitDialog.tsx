@@ -6,12 +6,11 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Plus } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
-import { validateTextInput, getSafeErrorMessage, rateLimiter } from "@/lib/security";
+import { validateTextInput, rateLimiter } from "@/lib/security";
 import { useAuditLog } from "@/hooks/useAuditLog";
-import { logger } from "@/utils/logger";
+import { useCreateOutfit } from "@/hooks/queries/useOutfits";
 
 interface CreateOutfitDialogProps {
   onOutfitCreated?: () => void;
@@ -28,7 +27,6 @@ const seasons = ["spring", "summer", "fall", "winter", "all seasons"];
 
 const CreateOutfitDialog = ({ onOutfitCreated, children, initialItem }: CreateOutfitDialogProps) => {
   const [open, setOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     name: "",
     description: "",
@@ -37,6 +35,7 @@ const CreateOutfitDialog = ({ onOutfitCreated, children, initialItem }: CreateOu
   });
   const { user } = useAuth();
   const { logEvent } = useAuditLog();
+  const createOutfitMutation = useCreateOutfit();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,56 +47,47 @@ const CreateOutfitDialog = ({ onOutfitCreated, children, initialItem }: CreateOu
       return;
     }
 
-    setLoading(true);
-    try {
-      // Validate and sanitize inputs
-      const nameValidation = validateTextInput(formData.name, 'name');
-      const descriptionValidation = validateTextInput(formData.description, 'description');
+    // Validate and sanitize inputs
+    const nameValidation = validateTextInput(formData.name, 'name');
+    const descriptionValidation = validateTextInput(formData.description, 'description');
 
-      if (!nameValidation.isValid) {
-        toast.error(nameValidation.error || 'Invalid outfit name');
-        return;
+    if (!nameValidation.isValid) {
+      toast.error(nameValidation.error || 'Invalid outfit name');
+      return;
+    }
+
+    if (!descriptionValidation.isValid) {
+      toast.error(descriptionValidation.error || 'Invalid description');
+      return;
+    }
+
+    createOutfitMutation.mutate({
+      name: nameValidation.sanitized,
+      description: descriptionValidation.sanitized || null,
+      occasion: formData.occasion || null,
+      season: formData.season || null,
+      items: initialItem ? [initialItem.id] : []
+    }, {
+      onSuccess: async () => {
+        // Log the creation for audit purposes
+        await logEvent({
+          event_type: 'outfit_created',
+          details: {
+            outfit_name: nameValidation.sanitized,
+            occasion: formData.occasion,
+            season: formData.season,
+            has_initial_item: !!initialItem
+          }
+        });
+
+        if (onOutfitCreated) onOutfitCreated();
+        setOpen(false);
+        setFormData({ name: "", description: "", occasion: "", season: "" });
       }
+    });
+  };
 
-      if (!descriptionValidation.isValid) {
-        toast.error(descriptionValidation.error || 'Invalid description');
-        return;
-      }
-      const { data: outfit, error: outfitError } = await supabase
-        .from('outfits')
-        .insert({
-          user_id: user.id,
-          name: nameValidation.sanitized,
-          description: descriptionValidation.sanitized || null,
-          occasion: formData.occasion || null,
-          season: formData.season || null,
-          is_public: false
-        })
-        .select()
-        .single();
-
-      if (outfitError) throw outfitError;
-
-      // If there's an initial item, add it to the outfit
-      if (initialItem && outfit) {
-        const { error: itemError } = await supabase
-          .from('outfit_items')
-          .insert({
-            outfit_id: outfit.id,
-            wardrobe_item_id: initialItem.id
-          });
-
-        if (itemError) throw itemError;
-      }
-
-      // Log the creation for audit purposes
-      await logEvent({
-        event_type: 'outfit_created',
-        details: {
-          outfit_name: nameValidation.sanitized,
-          occasion: formData.occasion,
-          season: formData.season,
-          has_initial_item: !!initialItem
+  const loading = createOutfitMutation.isPending;
         }
       });
 

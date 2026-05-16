@@ -5,63 +5,21 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { Search, Filter, Heart, ShoppingBag, Leaf, Plus } from 'lucide-react';
 import CreateMarketplaceListingDialog from './CreateMarketplaceListingDialog';
 import RentalListingsDialog from './RentalListingsDialog';
-import { logger } from "@/utils/logger";
-
-interface MarketplaceItem {
-  id: string;
-  title: string;
-  description: string | null;
-  price: number;
-  condition: string;
-  brand: string | null;
-  category: string;
-  size: string;
-  photos: any;
-  sustainability_score: number;
-  shipping_included: boolean;
-  created_at: string;
-}
+import { useMarketplaceItems } from '@/hooks/queries/useMarketplace';
 
 const MarketplaceHome = () => {
   const { toast } = useToast();
-  const [items, setItems] = useState<MarketplaceItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: items = [], isLoading: loading } = useMarketplaceItems();
+  
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [conditionFilter, setConditionFilter] = useState('all');
   const [priceRange, setPriceRange] = useState('all');
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showRentalDialog, setShowRentalDialog] = useState(false);
-
-  useEffect(() => {
-    fetchMarketplaceItems();
-  }, []);
-
-  const fetchMarketplaceItems = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('marketplace_items')
-        .select('*')
-        .eq('is_available', true)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setItems((data as any[]) || []);
-    } catch (error) {
-      logger.error('Error fetching marketplace items:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load marketplace items",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const filteredItems = items.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||

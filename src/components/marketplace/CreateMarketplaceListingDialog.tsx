@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,23 +6,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
-import { logger } from "@/utils/logger";
+import { useWardrobeItems } from '@/hooks/queries/useWardrobeItems';
+import { useCreateMarketplaceListing } from '@/hooks/queries/useMarketplace';
 
 interface CreateMarketplaceListingDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess: () => void;
-}
-
-interface WardrobeItem {
-  id: string;
-  name: string;
-  category: string;
-  brand: string | null;
-  photo_url: string | null;
 }
 
 const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogProps> = ({
@@ -31,9 +22,9 @@ const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogPro
   onSuccess,
 }) => {
   const { user } = useAuth();
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
-  const [wardrobeItems, setWardrobeItems] = useState<WardrobeItem[]>([]);
+  const { data: wardrobeItems = [] } = useWardrobeItems(user?.id);
+  const createListingMutation = useCreateMarketplaceListing();
+  
   const [formData, setFormData] = useState({
     wardrobe_item_id: '',
     title: '',
@@ -45,34 +36,13 @@ const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogPro
     sustainability_score: 70,
   });
 
-  useEffect(() => {
-    if (open && user) {
-      fetchWardrobeItems();
-    }
-  }, [open, user]);
-
-  const fetchWardrobeItems = async () => {
-    if (!user) return;
-    try {
-      const { data, error } = await supabase
-        .from('wardrobe_items')
-        .select('id, name, category, brand, photo_url')
-        .eq('user_id', user.id);
-
-      if (error) throw error;
-      setWardrobeItems(data || []);
-    } catch (error) {
-      logger.error('Error fetching wardrobe items:', error);
-    }
-  };
-
   const handleWardrobeItemSelect = (itemId: string) => {
     const item = wardrobeItems.find(i => i.id === itemId);
     if (item) {
       setFormData(prev => ({
         ...prev,
         wardrobe_item_id: itemId,
-        title: `${item.brand} ${item.name}`,
+        title: `${item.brand || ''} ${item.name}`,
       }));
     }
   };
@@ -81,44 +51,19 @@ const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogPro
     e.preventDefault();
     if (!user) return;
 
-    setLoading(true);
-    try {
-      const { error } = await supabase
-        .from('marketplace_items')
-        .insert({
-          seller_id: user.id,
-          wardrobe_item_id: formData.wardrobe_item_id || null,
-          title: formData.title,
-          description: formData.description,
-          price: parseFloat(formData.price),
-          condition: formData.condition,
-          size: formData.size,
-          shipping_included: formData.shipping_included,
-          sustainability_score: formData.sustainability_score,
-          category: wardrobeItems.find(i => i.id === formData.wardrobe_item_id)?.category || 'other',
-          brand: wardrobeItems.find(i => i.id === formData.wardrobe_item_id)?.brand || '',
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Success",
-        description: "Your item has been listed on the marketplace!",
-      });
-
-      onSuccess();
-      onOpenChange(false);
-      resetForm();
-    } catch (error) {
-      logger.error('Error creating listing:', error);
-      toast({
-        title: "Error",
-        description: "Failed to create marketplace listing",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
+    const selectedItem = wardrobeItems.find(i => i.id === formData.wardrobe_item_id);
+    
+    createListingMutation.mutate({
+      ...formData,
+      category: selectedItem?.category || 'other',
+      brand: selectedItem?.brand || '',
+    }, {
+      onSuccess: () => {
+        onSuccess();
+        onOpenChange(false);
+        resetForm();
+      }
+    });
   };
 
   const resetForm = () => {
@@ -133,6 +78,8 @@ const CreateMarketplaceListingDialog: React.FC<CreateMarketplaceListingDialogPro
       sustainability_score: 70,
     });
   };
+
+  const loading = createListingMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>

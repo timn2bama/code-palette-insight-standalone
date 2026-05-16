@@ -4,10 +4,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
-import { TrendingUp, TrendingDown, Shirt, Palette, Calendar, Target } from 'lucide-react';
+import { TrendingUp, TrendingDown, Shirt, Palette, Calendar, Target, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { supabase } from '@/integrations/supabase/client';
-import { logger } from "@/utils/logger";
+import { useWardrobeAnalytics } from '@/hooks/queries/useWardrobeAnalytics';
 
 interface WardrobeStats {
   totalItems: number;
@@ -21,55 +20,24 @@ interface WardrobeStats {
 }
 
 const WardrobeAnalyticsDashboard = () => {
-  const [stats, setStats] = useState<WardrobeStats | null>(null);
-  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { data: apiStats, isLoading: loading } = useWardrobeAnalytics(user?.id);
+  const [stats, setStats] = useState<WardrobeStats | null>(null);
 
   const COLORS = ['#8B5CF6', '#06B6D4', '#10B981', '#F59E0B', '#EF4444', '#EC4899'];
 
   useEffect(() => {
-    if (user) {
-      fetchAnalytics();
-    }
-  }, [user]);
-
-  const fetchAnalytics = async () => {
-    try {
-      setLoading(true);
+    if (apiStats) {
+      // Map API stats to component stats, filling in gaps with existing mock logic
+      const totalItems = apiStats.totalItems;
       
-      if (!user) return;
-      
-      // Fetch wardrobe items
-      const { data: items } = await supabase
-        .from('wardrobe_items')
-        .select('*')
-        .eq('user_id', user.id);
-
-      // Fetch outfits
-      const { data: outfits } = await supabase
-        .from('outfits')
-        .select('*')
-        .eq('user_id', user.id);
-
-      if (!items || !outfits) return;
-
-      // Calculate analytics
-      const totalItems = items.length;
-      const totalOutfits = outfits.length;
-
-      // Category distribution
-      const categoryMap = items.reduce((acc, item) => {
-        acc[item.category] = (acc[item.category] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-
-      const categoryDistribution = Object.entries(categoryMap).map(([category, count]) => ({
-        category,
-        count,
-        percentage: Math.round((count / totalItems) * 100)
+      const categoryDistribution = apiStats.categoryDistribution.map((item: any) => ({
+        category: item.name,
+        count: item.value,
+        percentage: Math.round((item.value / totalItems) * 100)
       }));
 
-      // Color distribution (simplified - would need actual color extraction)
+      // Maintain mock data for other complex metrics until API handles them
       const colors = ['Blue', 'Black', 'White', 'Gray', 'Red', 'Green'];
       const colorDistribution = colors.map((color) => ({
         color,
@@ -77,27 +45,39 @@ const WardrobeAnalyticsDashboard = () => {
         percentage: Math.floor(Math.random() * 15) + 5
       }));
 
-      // Usage stats (mock data - would need actual tracking)
-      const usageStats = items.slice(0, 10).map(item => ({
-        item: item.name,
+      const usageStats = Array.from({ length: 10 }).map((_, i) => ({
+        item: `Item ${i + 1}`,
         usageCount: Math.floor(Math.random() * 20) + 1,
         lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       }));
 
-      // Monthly additions
-      const monthlyAdditions = Array.from({ length: 6 }, (_, i) => {
-        const date = new Date();
-        date.setMonth(date.getMonth() - i);
-        return {
-          month: date.toLocaleString('default', { month: 'short' }),
-          items: Math.floor(Math.random() * 10) + 1,
-          outfits: Math.floor(Math.random() * 5) + 1
-        };
-      }).reverse();
+      const monthlyAdditions = apiStats.growth.map((g: any) => ({
+        month: g.month,
+        items: g.items,
+        outfits: Math.floor(g.items / 3)
+      }));
 
-      // Cost per wear (mock data)
-      const costPerWear = items.slice(0, 8).map(item => ({
-        item: item.name,
+      setStats({
+        totalItems: apiStats.totalItems,
+        totalOutfits: apiStats.totalOutfits,
+        categoryDistribution,
+        colorDistribution,
+        usageStats,
+        monthlyAdditions,
+        costPerWear: [], // Mocked later in component
+        seasonalAnalysis: [] // Mocked later
+      });
+    }
+  }, [apiStats]);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+        <p className="text-muted-foreground">Analyzing your wardrobe data...</p>
+      </div>
+    );
+  }
         cost: Math.floor(Math.random() * 100) + 20,
         wears: Math.floor(Math.random() * 15) + 1,
         cpw: 0

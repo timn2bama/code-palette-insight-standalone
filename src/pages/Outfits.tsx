@@ -7,47 +7,22 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import Navigation from "@/components/Navigation";
 import CreateOutfitDialog from "@/components/CreateOutfitDialog";
 import SmartOutfitAI from "@/components/ai-stylist/SmartOutfitAI";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
 import { Search, Calendar, Trash2, Shirt, Loader2 } from "lucide-react";
 import ViewOutfitDialog from "@/components/ViewOutfitDialog";
 import ProgressiveImage from "@/components/ProgressiveImage";
-import { logger } from "@/utils/logger";
-
-interface OutfitWithItems {
-  id: string;
-  name: string;
-  description: string | null;
-  occasion: string | null;
-  season: string | null;
-  created_at: string;
-  outfit_items: {
-    id: string;
-    wardrobe_items: {
-      id: string;
-      name: string;
-      category: string;
-      color: string | null;
-      photo_url: string | null;
-    } | null;
-  }[];
-}
+import { useOutfits, useDeleteOutfit } from "@/hooks/queries/useOutfits";
 
 const Outfits = () => {
-  const [outfits, setOutfits] = useState<OutfitWithItems[]>([]);
-  const [filteredOutfits, setFilteredOutfits] = useState<OutfitWithItems[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const { data: outfits = [], isLoading: loading, refetch: fetchOutfits } = useOutfits(user?.id);
+  const deleteOutfitMutation = useDeleteOutfit();
+  
+  const [filteredOutfits, setFilteredOutfits] = useState<any[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [occasionFilter, setOccasionFilter] = useState("all");
   const [seasonFilter, setSeasonFilter] = useState("all");
-  const { user } = useAuth();
-
-  useEffect(() => {
-    if (user) {
-      fetchOutfits();
-    }
-  }, [user]);
 
   useEffect(() => {
     let filtered = outfits;
@@ -70,55 +45,8 @@ const Outfits = () => {
     setFilteredOutfits(filtered);
   }, [searchQuery, occasionFilter, seasonFilter, outfits]);
 
-  const fetchOutfits = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('outfits')
-        .select(`
-          id,
-          name,
-          description,
-          occasion,
-          season,
-          created_at,
-          outfit_items (
-            id,
-            wardrobe_items (
-              id,
-              name,
-              category,
-              color,
-              photo_url
-            )
-          )
-        `)
-        .order('created_at', { ascending: false });
-
-      if (error) throw error;
-      setOutfits(data as any || []);
-    } catch (error) {
-      logger.error('Error fetching outfits:', error);
-      toast.error('Failed to load outfits');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const deleteOutfit = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from('outfits')
-        .delete()
-        .eq('id', id);
-
-      if (error) throw error;
-      toast.success('Outfit deleted successfully');
-      fetchOutfits();
-    } catch (error) {
-      logger.error('Error deleting outfit:', error);
-      toast.error('Failed to delete outfit');
-    }
+    deleteOutfitMutation.mutate(id);
   };
 
   const occasions = ['casual', 'formal', 'work', 'sport', 'date', 'party'];
@@ -189,8 +117,8 @@ const Outfits = () => {
         ) : filteredOutfits.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredOutfits.map((outfit) => {
-              const itemsCount = outfit.outfit_items.length;
-              const firstItem = outfit.outfit_items[0]?.wardrobe_items;
+              const itemsCount = outfit.items?.length || 0;
+              const firstItem = outfit.items?.[0]?.wardrobe_item;
               
               return (
                 <Card key={outfit.id} className="shadow-card hover:shadow-elegant transition-all duration-300 group overflow-hidden border-0 bg-white">
