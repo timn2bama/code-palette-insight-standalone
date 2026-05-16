@@ -2,15 +2,19 @@ import { lazy } from 'react';
 import { RouteObject } from 'react-router-dom';
 import ProtectedRoute from '@/components/ProtectedRoute';
 
-// Eager-loaded pages for optimal first paint
+// Eager-loaded landing page for optimal First Contentful Paint (LCP)
 import Index from '@/pages/Index';
-import Auth from '@/pages/Auth';
 
 // Lazy-loaded pages
+const Auth = lazy(() => import('@/pages/Auth'));
 const Wardrobe = lazy(() => import('@/pages/Wardrobe'));
 const Outfits = lazy(() => import('@/pages/Outfits'));
 const Explore = lazy(() => import('@/pages/Explore'));
 const Analytics = lazy(() => import('@/pages/Analytics'));
+const Marketplace = lazy(() => import('@/pages/Marketplace'));
+const AIStylist = lazy(() => import('@/pages/AIStylist'));
+const Sustainability = lazy(() => import('@/pages/Sustainability'));
+const Security = lazy(() => import('@/pages/Security'));
 const Integrations = lazy(() => import('@/pages/Integrations'));
 const Weather = lazy(() => import('@/pages/Weather'));
 const Services = lazy(() => import('@/pages/Services'));
@@ -52,6 +56,22 @@ export const routes: RouteObject[] = [
   { 
     path: '/analytics', 
     element: <ProtectedRoute><Analytics /></ProtectedRoute> 
+  },
+  { 
+    path: '/marketplace', 
+    element: <ProtectedRoute><Marketplace /></ProtectedRoute> 
+  },
+  { 
+    path: '/ai-stylist', 
+    element: <ProtectedRoute><AIStylist /></ProtectedRoute> 
+  },
+  { 
+    path: '/sustainability', 
+    element: <ProtectedRoute><Sustainability /></ProtectedRoute> 
+  },
+  { 
+    path: '/security', 
+    element: <ProtectedRoute><Security /></ProtectedRoute> 
   },
   { 
     path: '/integrations', 
