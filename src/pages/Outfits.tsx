@@ -13,13 +13,14 @@ import { Search, Calendar, Trash2, Shirt, Loader2 } from "lucide-react";
 import ViewOutfitDialog from "@/components/ViewOutfitDialog";
 import ProgressiveImage from "@/components/ProgressiveImage";
 import { useOutfits, useDeleteOutfit } from "@/hooks/queries/useOutfits";
+import { Outfit } from "@/types";
 
 const Outfits = () => {
   const { user } = useAuth();
   const { data: outfits = [], isLoading: loading, refetch: fetchOutfits } = useOutfits(user?.id);
   const deleteOutfitMutation = useDeleteOutfit();
   
-  const [filteredOutfits, setFilteredOutfits] = useState<any[]>([]);
+  const [filteredOutfits, setFilteredOutfits] = useState<Outfit[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [occasionFilter, setOccasionFilter] = useState("all");
   const [seasonFilter, setSeasonFilter] = useState("all");

@@ -6,7 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts';
 import { TrendingUp, TrendingDown, Shirt, Palette, Calendar, Target, Loader2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useWardrobeAnalytics } from '@/hooks/queries/useWardrobeAnalytics';
+import { useWardrobeAnalytics, WardrobeAnalytics } from '@/hooks/queries/useWardrobeAnalytics';
 
 interface WardrobeStats {
   totalItems: number;
@@ -31,7 +31,7 @@ const WardrobeAnalyticsDashboard = () => {
       // Map API stats to component stats, filling in gaps with existing mock logic
       const totalItems = apiStats.totalItems;
       
-      const categoryDistribution = apiStats.categoryDistribution.map((item: any) => ({
+      const categoryDistribution = apiStats.categoryDistribution.map((item) => ({
         category: item.name,
         count: item.value,
         percentage: Math.round((item.value / totalItems) * 100)
@@ -51,7 +51,7 @@ const WardrobeAnalyticsDashboard = () => {
         lastUsed: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       }));
 
-      const monthlyAdditions = apiStats.growth.map((g: any) => ({
+      const monthlyAdditions = apiStats.growth.map((g) => ({
         month: g.month,
         items: g.items,
         outfits: Math.floor(g.items / 3)
@@ -64,8 +64,8 @@ const WardrobeAnalyticsDashboard = () => {
         colorDistribution,
         usageStats,
         monthlyAdditions,
-        costPerWear: [], // Mocked later in component
-        seasonalAnalysis: [] // Mocked later
+        costPerWear: [], 
+        seasonalAnalysis: []
       });
     }
   }, [apiStats]);
