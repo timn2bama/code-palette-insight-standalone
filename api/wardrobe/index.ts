@@ -20,7 +20,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'POST') {
-      const { name, category, brand, color, photo_url } = req.body;
+      const { name, category, brand, color, photo_url, description } = req.body;
       const item = await prisma.wardrobeItem.create({
         data: {
           user_id: user.id,
@@ -29,6 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           brand,
           color,
           photo_url,
+          description,
         },
       });
       return res.status(201).json(item);

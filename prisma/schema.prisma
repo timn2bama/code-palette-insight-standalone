@@ -99,6 +99,7 @@ model WardrobeItem {
   brand           String?
   color           String?
   photo_url       String?
+  description     String?
   wear_count      Int       @default(0)
   last_worn       DateTime?
   purchase_date   DateTime?

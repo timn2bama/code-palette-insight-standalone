@@ -88,20 +88,6 @@ const CreateOutfitDialog = ({ onOutfitCreated, children, initialItem }: CreateOu
   };
 
   const loading = createOutfitMutation.isPending;
-        }
-      });
-
-      toast.success(`Outfit "${formData.name}" created successfully!`);
-      setFormData({ name: "", description: "", occasion: "", season: "" });
-      setOpen(false);
-      onOutfitCreated?.();
-    } catch (error) {
-      logger.error('Error creating outfit:', error);
-      toast.error(getSafeErrorMessage(error));
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
