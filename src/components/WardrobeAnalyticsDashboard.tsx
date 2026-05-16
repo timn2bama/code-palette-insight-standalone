@@ -78,57 +78,6 @@ const WardrobeAnalyticsDashboard = () => {
       </div>
     );
   }
-        cost: Math.floor(Math.random() * 100) + 20,
-        wears: Math.floor(Math.random() * 15) + 1,
-        cpw: 0
-      })).map(item => ({
-        ...item,
-        cpw: Math.round((item.cost / item.wears) * 100) / 100
-      }));
-
-      // Seasonal analysis
-      const seasonalAnalysis = [
-        { season: 'Spring', items: Math.floor(totalItems * 0.25), usage: Math.floor(Math.random() * 50) + 30 },
-        { season: 'Summer', items: Math.floor(totalItems * 0.3), usage: Math.floor(Math.random() * 50) + 40 },
-        { season: 'Fall', items: Math.floor(totalItems * 0.25), usage: Math.floor(Math.random() * 50) + 35 },
-        { season: 'Winter', items: Math.floor(totalItems * 0.2), usage: Math.floor(Math.random() * 50) + 25 }
-      ];
-
-      setStats({
-        totalItems,
-        totalOutfits,
-        categoryDistribution,
-        colorDistribution,
-        usageStats,
-        monthlyAdditions,
-        costPerWear,
-        seasonalAnalysis
-      });
-    } catch (error) {
-      logger.error('Error fetching analytics:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardHeader className="pb-2">
-                <div className="h-4 bg-secondary rounded w-1/2"></div>
-              </CardHeader>
-              <CardContent>
-                <div className="h-8 bg-secondary rounded w-3/4"></div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-    );
-  }
 
   if (!stats) return null;
 
