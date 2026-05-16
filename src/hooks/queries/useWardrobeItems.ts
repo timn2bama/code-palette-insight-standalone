@@ -36,14 +36,21 @@ export const useWardrobeItemsByCategory = (userId?: string) => {
   });
 };
 
+/** Invalidate all wardrobe-related queries after a mutation. */
+const invalidateWardrobeQueries = (queryClient: ReturnType<typeof useQueryClient>) => {
+  queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+  queryClient.invalidateQueries({ queryKey: ['wardrobe-items-by-category'] });
+  queryClient.invalidateQueries({ queryKey: ['wardrobe-stats'] });
+};
+
 export const useCreateWardrobeItem = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: (item: Partial<WardrobeItem>) => api.post('/wardrobe', item),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+      invalidateWardrobeQueries(queryClient);
       toast({
         title: "Success",
         description: "Wardrobe item added successfully.",
@@ -55,12 +62,12 @@ export const useCreateWardrobeItem = () => {
 export const useUpdateWardrobeItem = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
-    mutationFn: ({ id, ...item }: Partial<WardrobeItem> & { id: string }) => 
+    mutationFn: ({ id, ...item }: Partial<WardrobeItem> & { id: string }) =>
       api.patch(`/wardrobe/${id}`, item),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+      invalidateWardrobeQueries(queryClient);
       toast({
         title: "Success",
         description: "Wardrobe item updated successfully.",
@@ -72,11 +79,11 @@ export const useUpdateWardrobeItem = () => {
 export const useDeleteWardrobeItem = () => {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  
+
   return useMutation({
     mutationFn: (id: string) => api.delete(`/wardrobe/${id}`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
+      invalidateWardrobeQueries(queryClient);
       toast({
         title: "Success",
         description: "Wardrobe item deleted successfully.",

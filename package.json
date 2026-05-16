@@ -21,8 +21,6 @@
     "test:e2e:ui": "playwright test --ui"
   },
   "dependencies": {
-    "@auth/core": "^0.41.2",
-    "@auth/prisma-adapter": "^2.11.2",
     "@better-auth/prisma-adapter": "^1.6.9",
     "@capacitor/android": "^7.4.1",
     "@capacitor/camera": "^7.0.2",

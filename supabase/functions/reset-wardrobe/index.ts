@@ -2,12 +2,21 @@
 // Deletes the current user's wardrobe data: outfit_items, outfits, wardrobe_items, and stored photos
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+// CORS: restrict to known origins. SITE_URL env var should be set to the production domain.
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  Deno.env.get('SITE_URL') || '',
+].filter(Boolean);
 
 Deno.serve(async (req: Request) => {
+  const origin = req.headers.get('Origin') || '';
+  const corsOrigin = allowedOrigins.includes(origin) ? origin : allowedOrigins[0];
+  const corsHeaders = {
+    "Access-Control-Allow-Origin": corsOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+
   // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });

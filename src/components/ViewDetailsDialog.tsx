@@ -1,3 +1,7 @@
+// TODO: This component is large and handles multiple concerns. Extract into:
+// - ViewDetailsImageGallery (photo display + upload logic)
+// - ViewDetailsActions (outfit-related action buttons and dialogs)
+// - ViewDetailsStats (wear count, last worn, metadata display)
 import { useState, useRef, useEffect, useMemo } from "react";
 import { compressImage } from '../utils/imageCompression';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";

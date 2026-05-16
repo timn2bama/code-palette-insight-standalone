@@ -7,9 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { Heart, ThumbsUp, ThumbsDown, Meh, Star, Calendar, Cloud, Loader2 } from 'lucide-react';
 import { useOutfitLogging } from '@/hooks/useOutfitLogging';
 import { logger } from "@/utils/logger";
+import type { DailyOutfitSuggestion as DailyOutfitSuggestionData, OutfitItem } from '@/types/ai';
 
 interface DailyOutfitSuggestionProps {
-  suggestions: any[];
+  suggestions: DailyOutfitSuggestionData[];
   onRefresh: () => void;
 }
 
@@ -50,12 +51,12 @@ const DailyOutfitSuggestion: React.FC<DailyOutfitSuggestionProps> = ({
     }
   };
 
-  const markAsWorn = async (suggestion: any) => {
+  const markAsWorn = async (suggestion: DailyOutfitSuggestionData) => {
     try {
       setLoading(true);
-      
+
       // Extract items from outfit_data
-      const items_worn = suggestion.outfit_data?.items?.map((item: any) => ({
+      const items_worn = suggestion.outfit_data?.items?.map((item: OutfitItem) => ({
         item_id: item.id,
         name: item.name,
         category: item.category,
@@ -208,7 +209,7 @@ const DailyOutfitSuggestion: React.FC<DailyOutfitSuggestionProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                {suggestion.outfit_data?.items?.map((item: any, idx: number) => (
+                {suggestion.outfit_data?.items?.map((item: OutfitItem, idx: number) => (
                   <div key={idx} className="bg-secondary/10 rounded-xl p-3 border border-transparent hover:border-primary/20 transition-all text-center">
                     <div className="aspect-square bg-background rounded-lg mb-2 flex items-center justify-center text-2xl shadow-sm overflow-hidden">
                       {item.photo_url ? (

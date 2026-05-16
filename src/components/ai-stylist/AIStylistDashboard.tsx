@@ -8,44 +8,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Sparkles, Calendar, TrendingUp, ShoppingBag, Heart, Star } from 'lucide-react';
 import DailyOutfitSuggestion from './DailyOutfitSuggestion';
 import { logger } from "@/utils/logger";
-
-interface DailyOutfitSuggestion {
-  id: string;
-  suggestion_date: string;
-  outfit_data: any;
-  weather_context: any | null;
-  occasion: string | null;
-  style_preference: string | null;
-  ai_reasoning: string | null;
-  user_feedback: string | null;
-  was_worn: boolean | null;
-}
-
-interface EventOutfitRequest {
-  id: string;
-  event_title: string;
-  event_date: string;
-  event_type: string;
-  dress_code: string | null;
-  status: string;
-  suggested_outfits: any | null;
-}
-
-interface StyleEvolution {
-  id: string;
-  tracking_date: string;
-  style_metrics: any;
-  mood_tags: string[] | null;
-  confidence_level: number | null;
-  insights: any | null;
-}
+import type { DailyOutfitSuggestion as DailyOutfitSuggestionType, EventOutfitRequest, StyleEvolution } from '@/types/ai';
 
 const AIStylistDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('daily');
-  const [outfitSuggestions, setOutfitSuggestions] = useState<DailyOutfitSuggestion[]>([]);
+  const [outfitSuggestions, setOutfitSuggestions] = useState<DailyOutfitSuggestionType[]>([]);
   const [eventRequests, setEventRequests] = useState<EventOutfitRequest[]>([]);
   const [styleEvolution, setStyleEvolution] = useState<StyleEvolution[]>([]);
 
@@ -68,7 +38,7 @@ const AIStylistDashboard = () => {
         .limit(10);
 
       if (suggestionsError) throw suggestionsError;
-      setOutfitSuggestions((suggestionsData as DailyOutfitSuggestion[]) || []);
+      setOutfitSuggestions((suggestionsData as DailyOutfitSuggestionType[]) || []);
 
       // Fetch event outfit requests
       const { data: eventsData, error: eventsError } = await supabase

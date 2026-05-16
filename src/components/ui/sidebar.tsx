@@ -1,3 +1,8 @@
+// TODO: This component is ~761 lines. Extract into:
+// - SidebarNav (navigation items and menu structure)
+// - SidebarHeader (logo + user section)
+// - SidebarContext (move SidebarContext, SidebarProvider, useSidebar to a separate file)
+// - SidebarMenu / SidebarMenuButton sub-components into their own files
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
