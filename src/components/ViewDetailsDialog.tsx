@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { compressImage } from '../utils/imageCompression';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { toast } from "sonner";
 import AddToOutfitDialog from "./AddToOutfitDialog";
 import OutfitSuggestionsDialog from "./OutfitSuggestionsDialog";
 import { logger } from "@/utils/logger";
+import DOMPurify from 'dompurify';
 
 interface ClothingItem {
   id: string;
@@ -23,6 +24,7 @@ interface ClothingItem {
   color: string | null;
   brand: string | null;
   photo_url: string | null;
+  description?: string | null;
 }
 
 interface ViewDetailsDialogProps {
@@ -42,6 +44,10 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
   // Use the uploaded photo if available
   const photos = item.photo_url ? [item.photo_url] : [];
   const hasPhotos = photos.length > 0;
+
+  const sanitizedDescription = useMemo(() => {
+    return item.description ? DOMPurify.sanitize(item.description) : null;
+  }, [item.description]);
 
   useEffect(() => {
     logger.info('ViewDetailsDialog - Item received:', {
@@ -328,6 +334,19 @@ const ViewDetailsDialog = ({ item, children, onItemUpdated }: ViewDetailsDialogP
                 </div>
               </CardContent>
             </Card>
+
+            {/* Description */}
+            {sanitizedDescription && (
+              <Card>
+                <CardContent className="p-3 sm:p-4 space-y-2">
+                  <h4 className="font-semibold text-sm text-muted-foreground uppercase tracking-wider">Description</h4>
+                  <div 
+                    className="text-sm prose prose-sm max-w-none dark:prose-invert"
+                    dangerouslySetInnerHTML={{ __html: sanitizedDescription }}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
             {/* Wear Statistics */}
             <Card>

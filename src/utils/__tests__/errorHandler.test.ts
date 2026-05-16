@@ -1,24 +1,25 @@
 import { getUserFriendlyMessage, handleError, handleSuccess, withErrorHandling } from '../errorHandler';
 import { toast } from '@/hooks/use-toast';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-jest.mock('@/hooks/use-toast', () => ({
-  toast: jest.fn(),
+vi.mock('@/hooks/use-toast', () => ({
+  toast: vi.fn(),
 }));
 
-jest.mock('@/integrations/supabase/client', () => ({
+vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null } }),
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
     },
     functions: {
-      invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
+      invoke: vi.fn().mockResolvedValue({ data: null, error: null }),
     },
   },
 }));
 
 describe('ErrorHandler Utils', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getUserFriendlyMessage', () => {
@@ -99,7 +100,7 @@ describe('ErrorHandler Utils', () => {
 
   describe('withErrorHandling', () => {
     it('should return result on success', async () => {
-      const operation = jest.fn().mockResolvedValue('success');
+      const operation = vi.fn().mockResolvedValue('success');
       
       const result = await withErrorHandling(operation, 'general');
       
@@ -108,7 +109,7 @@ describe('ErrorHandler Utils', () => {
     });
 
     it('should handle error and return undefined', async () => {
-      const operation = jest.fn().mockRejectedValue(new Error('Failed'));
+      const operation = vi.fn().mockRejectedValue(new Error('Failed'));
       
       const result = await withErrorHandling(operation, 'general');
       
@@ -117,7 +118,7 @@ describe('ErrorHandler Utils', () => {
     });
 
     it('should return fallback value on error', async () => {
-      const operation = jest.fn().mockRejectedValue(new Error('Failed'));
+      const operation = vi.fn().mockRejectedValue(new Error('Failed'));
       
       const result = await withErrorHandling(operation, 'general', undefined, {
         fallbackValue: 'fallback',

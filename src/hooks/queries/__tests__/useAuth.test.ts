@@ -1,28 +1,28 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useSubscriptionQuery, useSignInMutation, useSignUpMutation } from '../useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { vi, describe, it, expect, beforeEach, afterEach, Mock } from 'vitest';
 
 // Mock supabase
-jest.mock('@/integrations/supabase/client', () => ({
+vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     functions: {
-      invoke: jest.fn(),
+      invoke: vi.fn(),
     },
     auth: {
-      signInWithPassword: jest.fn(),
-      signUp: jest.fn(),
+      signInWithPassword: vi.fn(),
+      signUp: vi.fn(),
     },
   },
 }));
 
-const mockToast = jest.fn();
+const mockToast = vi.fn();
 
 // Mock useToast
-jest.mock('@/hooks/use-toast', () => ({
-  useToast: jest.fn(() => ({
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: vi.fn(() => ({
     toast: mockToast,
   })),
 }));
@@ -31,7 +31,6 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      cacheTime: 0, // Disable cache for tests
     },
     mutations: {
       retry: false,
@@ -46,10 +45,11 @@ const createWrapper = () => {
 };
 
 describe('Auth Hooks', () => {
-  const { toast } = (useToast as jest.Mock)();
+  // Use mockToast directly instead of calling the hook here
+  const toast = mockToast;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     queryClient.clear();
   });
 
@@ -70,7 +70,7 @@ describe('Auth Hooks', () => {
 
     it('calls check-subscription function when userId is provided', async () => {
       const mockData = { subscribed: true, subscription_tier: 'Premium' };
-      (supabase.functions.invoke as jest.Mock).mockResolvedValue({ data: mockData, error: null });
+      (supabase.functions.invoke as Mock).mockResolvedValue({ data: mockData, error: null });
 
       const { result } = renderHook(() => useSubscriptionQuery('test-user-id'), {
         wrapper: createWrapper(),
@@ -82,7 +82,7 @@ describe('Auth Hooks', () => {
     });
 
     it('handles errors gracefully by returning unsubscribed', async () => {
-      (supabase.functions.invoke as jest.Mock).mockResolvedValue({ 
+      (supabase.functions.invoke as Mock).mockResolvedValue({ 
         data: null, 
         error: new Error('Network error') 
       });
@@ -98,7 +98,7 @@ describe('Auth Hooks', () => {
 
   describe('useSignInMutation', () => {
     it('successfully signs in a user', async () => {
-      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({ data: { user: {} }, error: null });
+      (supabase.auth.signInWithPassword as Mock).mockResolvedValue({ data: { user: {} }, error: null });
 
       const { result } = renderHook(() => useSignInMutation(), {
         wrapper: createWrapper(),
@@ -118,7 +118,7 @@ describe('Auth Hooks', () => {
     });
 
     it('shows error toast on sign-in failure', async () => {
-      (supabase.auth.signInWithPassword as jest.Mock).mockResolvedValue({ 
+      (supabase.auth.signInWithPassword as Mock).mockResolvedValue({ 
         data: null, 
         error: { message: 'Invalid credentials' } 
       });
@@ -144,7 +144,7 @@ describe('Auth Hooks', () => {
 
   describe('useSignUpMutation', () => {
     it('successfully signs up a new user', async () => {
-      (supabase.auth.signUp as jest.Mock).mockResolvedValue({ data: { user: {} }, error: null });
+      (supabase.auth.signUp as Mock).mockResolvedValue({ data: { user: {} }, error: null });
 
       const { result } = renderHook(() => useSignUpMutation(), {
         wrapper: createWrapper(),

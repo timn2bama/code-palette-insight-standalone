@@ -1,18 +1,17 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, waitFor } from '@testing-library/react';
 import App from './App';
-import { supabase } from '@/integrations/supabase/client';
 
 // Mock supabase
-jest.mock('@/integrations/supabase/client', () => ({
+vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      getSession: jest.fn(() => Promise.resolve({ data: { session: null }, error: null })),
-      onAuthStateChange: jest.fn(() => ({
-        data: { subscription: { unsubscribe: jest.fn() } },
+      getSession: vi.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+      onAuthStateChange: vi.fn(() => ({
+        data: { subscription: { unsubscribe: vi.fn() } },
       })),
     },
     functions: {
-      invoke: jest.fn(() => Promise.resolve({ data: { subscribed: false }, error: null })),
+      invoke: vi.fn(() => Promise.resolve({ data: { subscribed: false }, error: null })),
     },
   },
 }));

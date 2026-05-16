@@ -1,27 +1,29 @@
+import { vi } from 'vitest';
+
 export const supabase = {
   auth: {
-    getSession: jest.fn(),
-    onAuthStateChange: jest.fn(() => ({
-      data: { subscription: { unsubscribe: jest.fn() } },
+    getSession: vi.fn(),
+    onAuthStateChange: vi.fn(() => ({
+      data: { subscription: { unsubscribe: vi.fn() } },
     })),
-    signOut: jest.fn(),
+    signOut: vi.fn(),
   },
-  from: jest.fn(() => ({
-    select: jest.fn().mockReturnThis(),
-    insert: jest.fn().mockReturnThis(),
-    update: jest.fn().mockReturnThis(),
-    delete: jest.fn().mockReturnThis(),
-    eq: jest.fn().mockReturnThis(),
-    single: jest.fn(),
-    maybeSingle: jest.fn(),
+  from: vi.fn(() => ({
+    select: vi.fn().mockReturnThis(),
+    insert: vi.fn().mockReturnThis(),
+    update: vi.fn().mockReturnThis(),
+    delete: vi.fn().mockReturnThis(),
+    eq: vi.fn().mockReturnThis(),
+    single: vi.fn(),
+    maybeSingle: vi.fn(),
   })),
   functions: {
-    invoke: jest.fn(),
+    invoke: vi.fn(),
   },
   storage: {
-    from: jest.fn(() => ({
-      upload: jest.fn(),
-      getPublicUrl: jest.fn(),
+    from: vi.fn(() => ({
+      upload: vi.fn(),
+      getPublicUrl: vi.fn(),
     })),
   },
 };

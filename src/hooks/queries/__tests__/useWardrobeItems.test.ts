@@ -1,35 +1,21 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useWardrobeItems, useCreateWardrobeItem, useDeleteWardrobeItem } from '../useWardrobeItems';
-import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
-// Mock supabase
-const mockSupabaseChain = {
-  select: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockReturnThis(),
-  update: jest.fn().mockReturnThis(),
-  delete: jest.fn().mockReturnThis(),
-  eq: jest.fn().mockReturnThis(),
-  order: jest.fn().mockReturnThis(),
-  single: jest.fn(),
-};
-
-jest.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    from: jest.fn(() => mockSupabaseChain),
-  },
-}));
-
-const mockToast = jest.fn();
+const mockToast = vi.fn();
 
 // Mock useToast
-jest.mock('@/hooks/use-toast', () => ({
-  useToast: jest.fn(() => ({
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: vi.fn(() => ({
     toast: mockToast,
   })),
 }));
+
+// Mock global fetch
+const mockFetch = vi.fn();
+global.fetch = mockFetch;
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
@@ -45,7 +31,8 @@ const createWrapper = () => {
 
 describe('Wardrobe Hooks', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
+    mockFetch.mockReset();
   });
 
   describe('useWardrobeItems', () => {
@@ -60,7 +47,10 @@ describe('Wardrobe Hooks', () => {
 
     it('fetches items when userId is provided', async () => {
       const mockItems = [{ id: '1', name: 'Shirt' }];
-      (mockSupabaseChain.order as jest.Mock).mockResolvedValue({ data: mockItems, error: null });
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => mockItems,
+      });
 
       const { result } = renderHook(() => useWardrobeItems('test-user-id'), {
         wrapper: createWrapper(),
@@ -68,15 +58,19 @@ describe('Wardrobe Hooks', () => {
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
       expect(result.current.data).toEqual(mockItems);
-      expect(supabase.from).toHaveBeenCalledWith('wardrobe_items');
-      expect(mockSupabaseChain.eq).toHaveBeenCalledWith('user_id', 'test-user-id');
+      expect(mockFetch).toHaveBeenCalledWith('/api/wardrobe');
     });
   });
 
   describe('useCreateWardrobeItem', () => {
     it('successfully creates an item and shows toast', async () => {
       const newItem = { name: 'New Shoes', category: 'shoes' };
-      (mockSupabaseChain.single as jest.Mock).mockResolvedValue({ data: { id: '123', ...newItem }, error: null });
+      const createdItem = { id: '123', ...newItem };
+      
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => createdItem,
+      });
 
       const { result } = renderHook(() => useCreateWardrobeItem(), {
         wrapper: createWrapper(),
@@ -86,7 +80,10 @@ describe('Wardrobe Hooks', () => {
         await result.current.mutateAsync(newItem);
       });
 
-      expect(mockSupabaseChain.insert).toHaveBeenCalledWith(newItem);
+      expect(mockFetch).toHaveBeenCalledWith('/api/wardrobe', expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify(newItem),
+      }));
       expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
         title: 'Item added',
       }));
@@ -95,7 +92,10 @@ describe('Wardrobe Hooks', () => {
 
   describe('useDeleteWardrobeItem', () => {
     it('successfully deletes an item and shows toast', async () => {
-      (mockSupabaseChain.eq as jest.Mock).mockResolvedValue({ error: null });
+      mockFetch.mockResolvedValue({
+        ok: true,
+        json: async () => ({}),
+      });
 
       const { result } = renderHook(() => useDeleteWardrobeItem(), {
         wrapper: createWrapper(),
@@ -105,8 +105,9 @@ describe('Wardrobe Hooks', () => {
         await result.current.mutateAsync('item-123');
       });
 
-      expect(mockSupabaseChain.delete).toHaveBeenCalled();
-      expect(mockSupabaseChain.eq).toHaveBeenCalledWith('id', 'item-123');
+      expect(mockFetch).toHaveBeenCalledWith('/api/wardrobe/item-123', expect.objectContaining({
+        method: 'DELETE',
+      }));
       expect(mockToast).toHaveBeenCalledWith(expect.objectContaining({
         title: 'Item deleted',
       }));

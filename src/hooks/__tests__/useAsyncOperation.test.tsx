@@ -1,28 +1,28 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAsyncOperation } from '../useAsyncOperation';
 
-jest.mock('@/hooks/use-toast', () => ({
-  toast: jest.fn(),
+vi.mock('@/hooks/use-toast', () => ({
+  toast: vi.fn(),
 }));
 
-jest.mock('@/integrations/supabase/client', () => ({
+vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
     auth: {
-      getUser: jest.fn().mockResolvedValue({ data: { user: null } }),
+      getUser: vi.fn().mockResolvedValue({ data: { user: null } }),
     },
     functions: {
-      invoke: jest.fn().mockResolvedValue({ data: null, error: null }),
+      invoke: vi.fn().mockResolvedValue({ data: null, error: null }),
     },
   },
 }));
 
 describe('useAsyncOperation', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should execute operation successfully', async () => {
-    const mockOperation = jest.fn().mockResolvedValue('success');
+    const mockOperation = vi.fn().mockResolvedValue('success');
     const { result } = renderHook(() =>
       useAsyncOperation(mockOperation, {
         context: 'general',
@@ -44,7 +44,7 @@ describe('useAsyncOperation', () => {
 
   it('should handle errors', async () => {
     const mockError = new Error('Operation failed');
-    const mockOperation = jest.fn().mockRejectedValue(mockError);
+    const mockOperation = vi.fn().mockRejectedValue(mockError);
     const { result } = renderHook(() =>
       useAsyncOperation(mockOperation, {
         context: 'general',
@@ -61,8 +61,8 @@ describe('useAsyncOperation', () => {
   });
 
   it('should call onSuccess callback', async () => {
-    const mockOperation = jest.fn().mockResolvedValue('success');
-    const onSuccess = jest.fn();
+    const mockOperation = vi.fn().mockResolvedValue('success');
+    const onSuccess = vi.fn();
     
     const { result } = renderHook(() =>
       useAsyncOperation(mockOperation, {
@@ -79,8 +79,8 @@ describe('useAsyncOperation', () => {
 
   it('should call onError callback', async () => {
     const mockError = new Error('Failed');
-    const mockOperation = jest.fn().mockRejectedValue(mockError);
-    const onError = jest.fn();
+    const mockOperation = vi.fn().mockRejectedValue(mockError);
+    const onError = vi.fn();
     
     const { result } = renderHook(() =>
       useAsyncOperation(mockOperation, {
@@ -96,7 +96,7 @@ describe('useAsyncOperation', () => {
   });
 
   it('should reset error state', async () => {
-    const mockOperation = jest.fn().mockRejectedValue(new Error('Failed'));
+    const mockOperation = vi.fn().mockRejectedValue(new Error('Failed'));
     const { result } = renderHook(() =>
       useAsyncOperation(mockOperation)
     );

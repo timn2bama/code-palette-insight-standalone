@@ -7,6 +7,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { logger } from "@/utils/logger";
 
 interface FormData {
   email: string;
@@ -48,7 +49,7 @@ const Auth = () => {
       } else {
         const { error } = await signIn(data.email, data.password);
         if (error) {
-          console.error("Login detail:", error);
+          logger.error("Login detail:", error);
           toast.error("Login Failed", {
             description: error.message || JSON.stringify(error),
             duration: 10000,

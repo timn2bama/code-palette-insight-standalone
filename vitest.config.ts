@@ -9,7 +9,12 @@ export default defineConfig({
     environment: 'jsdom',
     globals: true,
     setupFiles: ['./setupTests.ts'],
-    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/playwright-report/**'],
+    environmentOptions: {
+      jsdom: {
+        url: 'http://localhost',
+      },
+    },
+    exclude: ['**/node_modules/**', '**/dist/**', '**/e2e/**', '**/playwright-report/**', '**/.worktrees/**'],
     alias: {
       '@': path.resolve(__dirname, './src'),
     },

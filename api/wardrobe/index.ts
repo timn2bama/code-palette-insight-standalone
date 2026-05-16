@@ -1,6 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { prisma } from '../lib/prisma';
 import { verifyUser } from '../lib/auth';
+import { logger } from '../lib/logger';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   const user = await verifyUser(req);
@@ -35,7 +36,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     return res.status(405).json({ error: 'Method Not Allowed' });
   } catch (error: any) {
-    console.error('API Error:', error);
+    logger.error('API Error:', error);
     return res.status(500).json({ error: error.message });
   }
 }

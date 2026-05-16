@@ -3,37 +3,38 @@ import { useOutfitRecommendations } from '../useOutfitRecommendations';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { logger } from "@/utils/logger";
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock supabase
 const mockSupabaseChain: any = {
-  select: jest.fn().mockReturnThis(),
-  insert: jest.fn().mockReturnThis(),
-  single: jest.fn().mockReturnThis(),
-  eq: jest.fn().mockReturnThis(),
-  order: jest.fn().mockReturnThis(),
+  select: vi.fn().mockReturnThis(),
+  insert: vi.fn().mockReturnThis(),
+  single: vi.fn().mockReturnThis(),
+  eq: vi.fn().mockReturnThis(),
+  order: vi.fn().mockReturnThis(),
 };
 
-jest.mock('@/integrations/supabase/client', () => ({
+vi.mock('@/integrations/supabase/client', () => ({
   supabase: {
-    from: jest.fn(() => mockSupabaseChain),
+    from: vi.fn(() => mockSupabaseChain),
   },
 }));
 
 // Mock useAuth
-jest.mock('@/contexts/AuthContext', () => ({
-  useAuth: jest.fn(),
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
 }));
 
 // Mock logger
-jest.mock('@/utils/logger', () => ({
+vi.mock('@/utils/logger', () => ({
   logger: {
-    error: jest.fn(),
+    error: vi.fn(),
   },
 }));
 
-const mockToast = jest.fn();
-jest.mock('@/hooks/use-toast', () => ({
-  useToast: jest.fn(() => ({
+const mockToast = vi.fn();
+vi.mock('@/hooks/use-toast', () => ({
+  useToast: vi.fn(() => ({
     toast: mockToast,
   })),
 }));
@@ -42,8 +43,8 @@ describe('useOutfitRecommendations', () => {
   const mockUser = { id: 'test-user-id' };
   
   beforeEach(() => {
-    jest.restoreAllMocks();
-    (useAuth as jest.Mock).mockReturnValue({ user: mockUser });
+    vi.restoreAllMocks();
+    (useAuth as any).mockReturnValue({ user: mockUser });
     
     // Reset implementations to default chaining behavior
     mockSupabaseChain.select.mockReturnThis();
@@ -59,7 +60,7 @@ describe('useOutfitRecommendations', () => {
       { id: '2', name: 'Jeans', category: 'bottoms', color: 'Blue', photo_url: null },
       { id: '3', name: 'Sneakers', category: 'shoes', color: 'Black', photo_url: null },
     ];
-    (mockSupabaseChain.select as jest.Mock).mockResolvedValue({ data: mockWardrobeItems, error: null });
+    (mockSupabaseChain.select as any).mockResolvedValue({ data: mockWardrobeItems, error: null });
 
     const { result } = renderHook(() => useOutfitRecommendations());
 
@@ -79,7 +80,7 @@ describe('useOutfitRecommendations', () => {
       { id: '2', name: 'Jeans', category: 'bottoms', color: 'Blue', photo_url: null },
       { id: '3', name: 'Sneakers', category: 'shoes', color: 'Black', photo_url: null },
     ];
-    (mockSupabaseChain.select as jest.Mock).mockResolvedValue({ data: mockWardrobeItems, error: null });
+    (mockSupabaseChain.select as any).mockResolvedValue({ data: mockWardrobeItems, error: null });
 
     const { result } = renderHook(() => useOutfitRecommendations());
 
@@ -107,7 +108,7 @@ describe('useOutfitRecommendations', () => {
     // First call: .from('outfits').insert(...).select().single()
     // Second call: .from('outfit_items').insert(...)
     
-    (mockSupabaseChain.single as jest.Mock).mockResolvedValue({ 
+    (mockSupabaseChain.single as any).mockResolvedValue({ 
       data: { id: 'outfit-123' }, 
       error: null 
     });
@@ -115,7 +116,7 @@ describe('useOutfitRecommendations', () => {
     // We need insert to return the chain for the first call, 
     // and resolve to { error: null } for the second call if it's awaited.
     // However, the code awaits the result of the whole chain.
-    (mockSupabaseChain.insert as jest.Mock)
+    (mockSupabaseChain.insert as any)
       .mockReturnValueOnce(mockSupabaseChain) // First call returns chain
       .mockResolvedValueOnce({ error: null }); // Second call resolves
 
@@ -131,7 +132,7 @@ describe('useOutfitRecommendations', () => {
   });
 
   it('handles errors during suggestion generation', async () => {
-    (mockSupabaseChain.select as jest.Mock).mockResolvedValue({ 
+    (mockSupabaseChain.select as any).mockResolvedValue({ 
       data: null, 
       error: new Error('Database error') 
     });

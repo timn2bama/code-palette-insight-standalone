@@ -1,17 +1,17 @@
+const isDev = process.env.NODE_ENV !== 'production';
+
 export const logger = {
   info: (message: string, ...data: any[]) => {
-    if (import.meta.env.DEV) {
+    if (isDev) {
       console.info(`[INFO] ${message}`, ...data);
     }
   },
   warn: (message: string, ...data: any[]) => {
-    if (import.meta.env.DEV) {
+    if (isDev) {
       console.warn(`[WARN] ${message}`, ...data);
     }
   },
   error: (message: string, ...data: any[]) => {
     console.error(`[ERROR] ${message}`, ...data);
-    // In a real production app, we could send this to Sentry, LogRocket, etc.
-    // e.g. logToService({ level: 'error', message, data });
   }
 };

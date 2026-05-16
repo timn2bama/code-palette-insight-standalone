@@ -1,26 +1,27 @@
 import { renderHook, act } from '@testing-library/react';
 import { useIsMobile } from '../use-mobile';
+import { Mock } from 'vitest';
 
 describe('useIsMobile', () => {
-  let addEventListener: jest.Mock;
-  let removeEventListener: jest.Mock;
+  let addEventListener: Mock;
+  let removeEventListener: Mock;
 
   beforeEach(() => {
-    addEventListener = jest.fn();
-    removeEventListener = jest.fn();
+    addEventListener = vi.fn();
+    removeEventListener = vi.fn();
     
     Object.defineProperty(window, 'matchMedia', {
       writable: true,
       configurable: true,
-      value: jest.fn().mockImplementation(query => ({
+      value: vi.fn().mockImplementation((query: string) => ({
         matches: window.innerWidth < 768,
         media: query,
         onchange: null,
-        addListener: jest.fn(),
-        removeListener: jest.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
         addEventListener,
         removeEventListener,
-        dispatchEvent: jest.fn(),
+        dispatchEvent: vi.fn(),
       })),
     });
   });

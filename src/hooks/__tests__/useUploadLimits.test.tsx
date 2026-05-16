@@ -3,10 +3,11 @@ import { useUploadLimits } from '../useUploadLimits';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import React from 'react';
+import { vi, describe, it, expect, beforeEach } from 'vitest';
 
 // Mock the useAuth hook
-jest.mock('@/contexts/AuthContext', () => ({
-  useAuth: jest.fn(),
+vi.mock('@/contexts/AuthContext', () => ({
+  useAuth: vi.fn(),
 }));
 
 const mockUser = {
@@ -20,7 +21,6 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: false,
-      cacheTime: 0,
     },
   },
 });
@@ -36,15 +36,15 @@ const createWrapper = () => {
 describe('useUploadLimits', () => {
   beforeEach(() => {
     queryClient.clear();
-    (useAuth as jest.Mock).mockReturnValue({
+    (useAuth as any).mockReturnValue({
       user: mockUser,
       session: null,
       loading: false,
       subscriptionStatus: { subscribed: false },
-      checkSubscription: jest.fn(),
-      signUp: jest.fn(),
-      signIn: jest.fn(),
-      signOut: jest.fn(),
+      checkSubscription: vi.fn(),
+      signUp: vi.fn(),
+      signIn: vi.fn(),
+      signOut: vi.fn(),
     });
   });
 

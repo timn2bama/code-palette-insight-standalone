@@ -1,6 +1,6 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
-import { afterEach, jest } from '@jest/globals';
+import { afterEach, vi } from 'vitest';
 import 'fake-indexeddb/auto';
 
 // Mock import.meta.env
@@ -18,9 +18,9 @@ import 'fake-indexeddb/auto';
 
 // Mock performance API
 if (typeof performance !== 'undefined') {
-  (performance as any).getEntriesByType = jest.fn().mockReturnValue([]);
-  (performance as any).mark = jest.fn();
-  (performance as any).measure = jest.fn();
+  (performance as any).getEntriesByType = vi.fn().mockReturnValue([]);
+  (performance as any).mark = vi.fn();
+  (performance as any).measure = vi.fn();
 }
 
 // Cleanup after each test
@@ -32,15 +32,15 @@ afterEach(() => {
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   configurable: true,
-  value: jest.fn().mockImplementation((query: any) => ({
+  value: vi.fn().mockImplementation((query: any) => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(),
-    removeListener: jest.fn(),
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
-    dispatchEvent: jest.fn(),
+    addListener: vi.fn(),
+    removeListener: vi.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    dispatchEvent: vi.fn(),
   })),
 });
 
