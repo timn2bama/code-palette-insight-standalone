@@ -19,7 +19,6 @@ export async function verifyUser(req: VercelRequest) {
 
   if (!session || !session.user) return null;
   
-  // Return standard user object structure
   return {
     id: session.user.id,
     email: session.user.email,

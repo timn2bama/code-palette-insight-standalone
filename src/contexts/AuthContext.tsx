@@ -60,14 +60,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const { error } = await authClient.signUp.email({
         email,
         password,
-        name: displayName || '',
+        name: displayName,
       });
-      if (error) {
-        logger.error('SignUp Error:', error);
-      }
       return { error };
     } catch (error) {
-      logger.error('SignUp Exception:', error);
       return { error };
     }
   };
@@ -78,12 +74,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         email,
         password,
       });
-      if (error) {
-        logger.error('SignIn Error:', error);
-      }
       return { error };
     } catch (error) {
-      logger.error('SignIn Exception:', error);
       return { error };
     }
   };

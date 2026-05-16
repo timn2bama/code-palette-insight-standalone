@@ -8,7 +8,10 @@ export const useWardrobeItems = (userId?: string) => {
       if (!userId) return [];
       
       const response = await fetch('/api/wardrobe');
-      if (!response.ok) throw new Error('Failed to fetch items');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch items');
+      }
       return response.json();
     },
     enabled: !!userId,
@@ -20,7 +23,7 @@ export const useWardrobeItemsByCategory = (userId?: string) => {
   return useQuery({
     queryKey: ['wardrobe-items-by-category', userId],
     queryFn: async () => {
-      if (!userId) return {};
+      if (!userId) return [];
       
       const response = await fetch('/api/wardrobe');
       if (!response.ok) throw new Error('Failed to fetch items');
@@ -56,22 +59,21 @@ export const useCreateWardrobeItem = () => {
       
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to add item');
+        throw new Error(error.error || 'Failed to create item');
       }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
-      queryClient.invalidateQueries({ queryKey: ['wardrobe-items-by-category'] });
-      
       toast({
-        title: "Item added",
-        description: "Your wardrobe item has been added successfully.",
+        title: "Success",
+        description: "Wardrobe item added successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to add item",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
@@ -84,29 +86,30 @@ export const useUpdateWardrobeItem = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async ({ id, updates }: { id: string; updates: any }) => {
+    mutationFn: async ({ id, ...item }: any) => {
       const response = await fetch(`/api/wardrobe/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(updates),
+        body: JSON.stringify(item),
       });
       
       if (!response.ok) {
         const error = await response.json();
         throw new Error(error.error || 'Failed to update item');
       }
+      
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
       toast({
-        title: "Item updated",
-        description: "Your wardrobe item has been updated successfully.",
+        title: "Success",
+        description: "Wardrobe item updated successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to update item",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
@@ -128,19 +131,19 @@ export const useDeleteWardrobeItem = () => {
         const error = await response.json();
         throw new Error(error.error || 'Failed to delete item');
       }
+      
+      return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['wardrobe-items'] });
-      queryClient.invalidateQueries({ queryKey: ['wardrobe-items-by-category'] });
-      
       toast({
-        title: "Item deleted",
-        description: "Your wardrobe item has been deleted successfully.",
+        title: "Success",
+        description: "Wardrobe item deleted successfully.",
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Failed to delete item",
+        title: "Error",
         description: error.message,
         variant: "destructive",
       });
