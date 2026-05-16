@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useToast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
+import api from '@/lib/api';
 
 export interface WardrobeAnalytics {
   totalItems: number;
@@ -15,17 +15,9 @@ export interface WardrobeAnalytics {
 }
 
 export const useWardrobeAnalytics = (userId?: string) => {
-  return useQuery({
+  return useQuery<WardrobeAnalytics>({
     queryKey: ['wardrobe-analytics', userId],
-    queryFn: async () => {
-      if (!userId) return null;
-      const response = await fetch('/api/analytics');
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch analytics');
-      }
-      return response.json() as Promise<WardrobeAnalytics>;
-    },
+    queryFn: () => api.get('/analytics'),
     enabled: !!userId,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
