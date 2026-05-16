@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
+import { WardrobeItem } from '@/types';
 
 export const useWardrobeItems = (userId?: string) => {
-  return useQuery({
+  return useQuery<WardrobeItem[]>({
     queryKey: ['wardrobe-items', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -27,10 +28,10 @@ export const useWardrobeItemsByCategory = (userId?: string) => {
       
       const response = await fetch('/api/wardrobe');
       if (!response.ok) throw new Error('Failed to fetch items');
-      const data = await response.json();
+      const data: WardrobeItem[] = await response.json();
       
       // Count items per category
-      const counts = data?.reduce((acc: { [key: string]: number }, item: any) => {
+      const counts = data?.reduce((acc: { [key: string]: number }, item) => {
         acc[item.category] = (acc[item.category] || 0) + 1;
         return acc;
       }, {}) || {};
@@ -50,7 +51,7 @@ export const useCreateWardrobeItem = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async (item: any) => {
+    mutationFn: async (item: Partial<WardrobeItem>) => {
       const response = await fetch('/api/wardrobe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -86,7 +87,7 @@ export const useUpdateWardrobeItem = () => {
   const { toast } = useToast();
   
   return useMutation({
-    mutationFn: async ({ id, ...item }: any) => {
+    mutationFn: async ({ id, ...item }: Partial<WardrobeItem> & { id: string }) => {
       const response = await fetch(`/api/wardrobe/${id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },

@@ -1,27 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-
-export interface OutfitWithItems {
-  id: string;
-  name: string;
-  description: string | null;
-  occasion: string | null;
-  season: string | null;
-  created_at: string;
-  items: {
-    id: string;
-    wardrobe_item: {
-      id: string;
-      name: string;
-      category: string;
-      color: string | null;
-      photo_url: string | null;
-    };
-  }[];
-}
+import { Outfit } from '@/types';
 
 export const useOutfits = (userId?: string) => {
-  return useQuery({
+  return useQuery<Outfit[]>({
     queryKey: ['outfits', userId],
     queryFn: async () => {
       if (!userId) return [];
@@ -30,7 +12,7 @@ export const useOutfits = (userId?: string) => {
         const error = await response.json();
         throw new Error(error.error || 'Failed to fetch outfits');
       }
-      return response.json() as Promise<OutfitWithItems[]>;
+      return response.json();
     },
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
@@ -42,7 +24,7 @@ export const useCreateOutfit = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (outfit: any) => {
+    mutationFn: async (outfit: Partial<Outfit> & { items: string[] }) => {
       const response = await fetch('/api/outfits', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
