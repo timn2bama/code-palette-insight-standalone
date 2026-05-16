@@ -1,19 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { Outfit } from '@/types';
+import api from '@/lib/api';
 
 export const useOutfits = (userId?: string) => {
   return useQuery<Outfit[]>({
     queryKey: ['outfits', userId],
-    queryFn: async () => {
-      if (!userId) return [];
-      const response = await fetch('/api/outfits');
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to fetch outfits');
-      }
-      return response.json();
-    },
+    queryFn: () => api.get('/outfits'),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   });
@@ -24,18 +17,7 @@ export const useCreateOutfit = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (outfit: Partial<Outfit> & { items: string[] }) => {
-      const response = await fetch('/api/outfits', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(outfit),
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create outfit');
-      }
-      return response.json();
-    },
+    mutationFn: (outfit: Partial<Outfit> & { items: string[] }) => api.post('/outfits', outfit),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['outfits'] });
       toast({
@@ -43,13 +25,6 @@ export const useCreateOutfit = () => {
         description: "Outfit created successfully.",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   });
 };
 
@@ -58,16 +33,7 @@ export const useDeleteOutfit = () => {
   const { toast } = useToast();
 
   return useMutation({
-    mutationFn: async (id: string) => {
-      const response = await fetch(`/api/outfits?id=${id}`, {
-        method: 'DELETE',
-      });
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to delete outfit');
-      }
-      return response.json();
-    },
+    mutationFn: (id: string) => api.delete(`/outfits?id=${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['outfits'] });
       toast({
@@ -75,12 +41,5 @@ export const useDeleteOutfit = () => {
         description: "Outfit deleted successfully.",
       });
     },
-    onError: (error: Error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    }
   });
 };
